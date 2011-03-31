@@ -43,6 +43,9 @@ void ser_printpkt(struct pktbuffer_s *pkt);
 
 void ser_poll();
 
+uint8_t evt_button_mask = 0; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
+uint8_t evt_button_last = 0; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
+
 /************************************************************
  *                          Network                         *
  ************************************************************/
@@ -630,6 +633,39 @@ parser_error:
 	}
 }
 
+/************************************************************
+ *                      Event handling                      *
+ ************************************************************/
+
+void evt_poll() {
+	uint8_t current_buttons = 0; // format as in evt_button_last
+	uint8_t button_event = 0;
+
+	for(int i=0; i<4; ++i)
+		current_buttons |= (button(i) << (2*i));
+
+	button_event |= current_buttons & ~evt_button_last; // newly pressed = down
+	button_event |= (~current_buttons & evt_button_last)<<1; // newly pressed = up
+
+	button_event &= evt_button_mask;
+
+	evt_button_last = current_buttons;
+
+	if(!button_event)
+		return;
+
+	sendbuf.hdr.pkttype = 'E';
+	sendbuf.hdr.seqnum = ++last_send_seq;
+	memcpy(&sendbuf.hdr.dst, &basestation, 8);
+	memcpy(&sendbuf.hdr.src, &my_addr, 8);
+	sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_event);
+
+	sendbuf.pkt_event.event_type = ET_BUTTON;
+	sendbuf.pkt_event.event_payload = button_event;
+
+	net_send_until_acked('e');
+}
+
 
 /************************************************************
  *                         Main Loop                        *
@@ -662,5 +698,7 @@ void loop()
 	// check buttons - TBD
 
 	// read serial cmd
+
+	evt_poll();
 }
 
