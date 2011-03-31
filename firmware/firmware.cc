@@ -21,8 +21,11 @@ struct pktbuffer_s recvbuf;
 bool do_soft_reset = true;
 
 void net_proc();
-void net_poll();
+bool net_poll();
 void net_send();
+bool net_send_until_acked(uint8_t ack_type);
+#define NET_RESEND_DELAYS 5
+int16_t net_resend_delays[NET_RESEND_DELAYS] = {20, 100, 300, 800, 1500}; // resend interval in ms from the first attempt to send; chosen arbitrarily
 
 uint8_t ser_readbyte();
 void ser_readeol();
@@ -105,11 +108,11 @@ void net_proc()
 	}
 }
 
-void net_poll()
+bool net_poll()
 {
 	// a new pkt to process?
 	if (!rf12_recvDone() || rf12_crc != 0)
-		return;
+		return false;
 
 	Serial.print("Got raw pkt: ");
 	for (int i=0; i<HEADER_MAGIC_LENGTH; i++)
@@ -122,13 +125,12 @@ void net_poll()
 
 	// is it for us?
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
-		return;
+		return false;
 
 	// copy to recv buffer
 	memcpy(&recvbuf, (void*)rf12_data, rf12_len);
 
-	// procces
-	net_proc();
+	return true;
 }
 
 void net_send()
@@ -145,8 +147,45 @@ void net_send()
 
 	Serial.print("* just sent: ");
 	ser_printpkt(&sendbuf);
+}
 
-	// wait for ack if needed and resend - TBD
+/* like net_send, but will try again and again until an ack of ack_type is
+ * received. drops all other packages. if a timeout is reached, it returns
+ * false and sets a flag to do a soft reset when the main loop is next run.
+ *
+ * this can block for an extended period of time and runs a mini-mainloop
+ * inside.
+ * */
+bool net_send_until_acked(uint8_t ack_type)
+{
+	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions.
+	uint16_t delta_t;
+	uint8_t resend_number;
+
+	net_send();
+
+	while(1) {
+		if(net_poll()) {
+			// a 'net_proc light' as it only waits for a very
+			// particular package
+			if(recvbuf.hdr.pkttype == ack_type && recvbuf.hdr.seqnum == last_send_seq)
+			{
+				Serial.println("* Acknowledgement received, continuing.");
+				return true;
+			}
+		}
+		delta_t = (uint16_t)(millis() - first_send);
+		if(delta_t > net_resend_delays[resend_number]) {
+			++resend_number;
+			if(resend_number == NET_RESEND_DELAYS) {
+				Serial.println("* Giving up resending, starting soft-reset.");
+				do_soft_reset = true;
+				return false;
+			} else {
+				net_send();
+			}
+		}
+	}
 }
 
 
@@ -616,7 +655,7 @@ void loop()
 {
 	if(do_soft_reset) reset_soft();
 
-	net_poll();
+	if(net_poll()) net_proc();
 	ser_poll();
 
 	// run_vm();
