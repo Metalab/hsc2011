@@ -79,9 +79,8 @@ void net_proc()
 			// TBD eventmask
 
 			// send just once -- if the ack gets lost, the host
-			// will send another 'S' with the same sequence number,
-			// net_poll() will recognize the lost ack and just
-			// net_send() again
+			// will send another 'S', and it has to be idempotent
+			// anyway.
 			net_send();
 			break;
 		case 's':
