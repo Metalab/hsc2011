@@ -108,9 +108,9 @@ struct pktbuffer_s
 
 		struct {
 			int datamem : 1;
-			int length : 6;
+			int length : 5;
 			uint16_t addr;
-			uint8_t data[64];
+			uint8_t data[32];
 		} pkt_write;
 
 		struct {
@@ -119,15 +119,15 @@ struct pktbuffer_s
 
 		struct {
 			int datamem : 1;
-			int length : 6;
+			int length : 5;
 			uint16_t addr;
 		} pkt_read;
 
 		struct {
 			int datamem : 1;
-			int length : 6;
+			int length : 5;
 			uint16_t addr;
-			uint8_t data[64];
+			uint8_t data[32];
 		} pkt_read_ack;
 	};
 };
