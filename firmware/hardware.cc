@@ -14,6 +14,12 @@ const int rgbPins[3] = { 3, 5, 6 };		// d3, d5, d6
 const int onewirePin = 19;			// a5
 const int buzzerPin = 9;			// d9
 
+// if we run into extreme memory constraints, we can probably receive those
+// values from hardware state -- but not with the arduino calls we are
+// currently using
+int current_rgb[3] = {0, 0, 0};
+uint16_t current_buzzer;
+
 OneWire ds(onewirePin);	
 
 boolean button(byte n)
@@ -26,15 +32,29 @@ void led(byte n, boolean state)
 	digitalWrite(ledPins[n], state ? HIGH : LOW);
 }
 
+boolean getled(byte n)
+{
+	digitalRead(ledPins[n]);
+}
+
 void rgb(byte r, byte g, byte b)
 {
 	analogWrite(rgbPins[0], r);
 	analogWrite(rgbPins[1], g);
 	analogWrite(rgbPins[2], b);
+	current_rgb[0] = r;
+	current_rgb[1] = g;
+	current_rgb[2] = b;
+}
+
+byte getrgb(byte n)
+{
+	return current_rgb[n];
 }
 
 void buzzer(uint16_t freq)
 {
+	current_buzzer = freq;
 #if 0
 	// This somhow breaks the PWM on on of the RGB channels
 	// so we use the hand written OCR1 setup code below..
@@ -66,6 +86,11 @@ void buzzer(uint16_t freq)
 	// Serial.print(ocr, DEC);
 	// Serial.println("");
 #endif
+}
+
+uint16_t getbuzzer()
+{
+	return current_buzzer;
 }
 
 void hw_setup()
