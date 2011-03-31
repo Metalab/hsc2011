@@ -68,7 +68,7 @@ void buzzer(uint16_t freq)
 #endif
 }
 
-void setup()
+void hw_setup()
 {
 	// initialize serial communication
 	Serial.begin(57600);

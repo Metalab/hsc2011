@@ -29,22 +29,22 @@ enum pkttype_e
 {
 	/* initiated by buzzer, acked by basestation */
 
-	PKTT_LOGIN = 100,
-	PKTT_LOGIN_ACK = 101,
+	PKTT_LOGIN = 'L',
+	PKTT_LOGIN_ACK = 'l',
 
-	PKTT_EVENT = 110,
-	PKTT_EVENT_ACK = 111,
+	PKTT_EVENT = 'E',
+	PKTT_EVENT_ACK = 'e',
 
 	/* initiated by basestation, acked by buzzer */
 
-	PKTT_STATUS = 200,
-	PKTT_STATUS_ACK = 201,
+	PKTT_STATUS = 'S',
+	PKTT_STATUS_ACK = 's',
 
-	PKTT_WRITE = 210,
-	PKTT_WRITE_ACK = 211,
+	PKTT_WRITE = 'W',
+	PKTT_WRITE_ACK = 'w',
 
-	PKTT_READ = 220,
-	PKTT_READ_ACK = 221
+	PKTT_READ = 'R',
+	PKTT_READ_ACK = 'r'
 };
 
 enum event_e
@@ -99,7 +99,7 @@ struct pktbuffer_s
 		struct {
 			int vm_running : 1;
 			int leds : 4;
-			int button : 4;
+			int buttons : 4;
 			uint16_t ip;
 			uint16_t buzzer;
 			uint16_t rgb[3];

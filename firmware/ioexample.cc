@@ -28,6 +28,11 @@ void poll_RF12()
 	}
 }
 
+void setup()
+{
+	hw_setup();
+}
+
 void loop()
 {
 	if (button(0))
