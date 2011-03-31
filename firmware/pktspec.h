@@ -101,13 +101,13 @@ struct pktbuffer_s
 			int set_rgb : 1;
 			int set_buzzer : 1;
 			int set_leds : 4;
+			int leds_val : 4;
 			uint16_t ip_val;
 			uint16_t buzzer_val;
 			uint8_t rgb_val[3];
 			// eventmask: [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
 			uint8_t eventmask_val;
 			uint8_t eventmask_setbits;
-			int leds_val : 4;
 		} pkt_status;
 
 		struct {
