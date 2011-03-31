@@ -22,6 +22,8 @@ void net_proc();
 void net_poll();
 void net_send();
 
+void ser_printpkt(struct pktbuffer_s *pkt);
+
 void net_proc()
 {
 	switch(recvbuf.pkttype) {
@@ -87,6 +89,10 @@ void net_poll()
 	if (!rf12_recvDone() || rf12_crc != 0)
 		return;
 
+	// does it have the right magic?
+	if (memcmp(sendbuf.magic, "ML-EDBUZ", 8))
+		return;
+
 	// is it for us?
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->dst, 8))
 		return;
@@ -110,6 +116,9 @@ void net_send()
 	// drop every incoming until we can send
 	while (!rf12_canSend())
 		rf12_recvDone();
+
+	/* write magic */
+	memcpy(sendbuf.magic, "ML-EDBUZ", 8);
 
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);
@@ -219,6 +228,137 @@ int ser_readeventtype()
 	}
 }
 
+void ser_printhex(uint8_t val)
+{
+	Serial.write("0123456789ABCDEF"[val >> 4]);
+	Serial.write("0123456789ABCDEF"[val & 15]);
+}
+
+void ser_printhex16(uint16_t val)
+{
+	ser_printhex(val >> 8);
+	ser_printhex(val & 255);
+}
+
+void ser_printpkt(struct pktbuffer_s *pkt)
+{
+	Serial.write(pkt->pkttype);
+	Serial.write(' ');
+	ser_printhex(pkt->seqnum);
+	Serial.write(' ');
+
+	for (int i=0; i < 8; i++)
+		ser_printhex(pkt->src[i]);
+	Serial.write(' ');
+
+	for (int i=0; i < 8; i++)
+		ser_printhex(pkt->dst[i]);
+	Serial.write(' ');
+
+	switch (pkt->pkttype)
+	{
+	case 'L':
+		Serial.write(pkt->pkt_login.using_ibutton ? 'y' : 'n');
+		break;
+
+	case 'l':
+		break;
+
+	case 'E':
+		Serial.write(pkt->pkt_event.event_type);
+		ser_printhex16(pkt->pkt_event.event_payload);
+		break;
+
+	case 'e':
+		break;
+
+	case 'S':
+		Serial.write(pkt->pkt_status.vm_stop ? 'y' : 'n');
+		Serial.write(pkt->pkt_status.vm_start ? 'y' : 'n');
+		Serial.write(' ');
+		
+		Serial.write(pkt->pkt_status.set_ip ? 'y' : 'n');
+		if (pkt->pkt_status.set_ip)
+			ser_printhex16(pkt->pkt_status.ip_val);
+		Serial.write(' ');
+		
+		Serial.write(pkt->pkt_status.set_rgb ? 'y' : 'n');
+		if (pkt->pkt_status.set_rgb) {
+			ser_printhex(pkt->pkt_status.rgb_val[0]);
+			ser_printhex(pkt->pkt_status.rgb_val[1]);
+			ser_printhex(pkt->pkt_status.rgb_val[2]);
+		}
+		Serial.write(' ');
+		
+		Serial.write(pkt->pkt_status.set_buzzer ? 'y' : 'n');
+		if (pkt->pkt_status.set_buzzer)
+			ser_printhex16(pkt->pkt_status.buzzer_val);
+		Serial.write(' ');
+
+		for (int i=0; i<4; i++) {
+			if ((pkt->pkt_status.set_leds & (1 << i)) == 0)
+				Serial.write('z');
+			else if ((pkt->pkt_status.leds_val & (1 << i)) == 0)
+				Serial.write('y');
+			else
+				Serial.write('n');
+		}
+		Serial.write(' ');
+		
+		for (int i=0; i<8; i++) {
+			if ((pkt->pkt_status.eventmask_setbits & (1 << i)) == 0)
+				Serial.write('z');
+			else if ((pkt->pkt_status.eventmask_val & (1 << i)) == 0)
+				Serial.write('y');
+			else
+				Serial.write('n');
+		}
+		Serial.write('\n');
+		break;
+
+	case 's':
+		Serial.write(pkt->pkt_status_ack.vm_running ? 'y' : 'n');
+		Serial.write(' ');
+
+		for (int i=0; i<4; i++) {
+			if ((pkt->pkt_status_ack.leds & (1 << i)) != 0)
+				Serial.write('y');
+			else
+				Serial.write('n');
+		}
+		Serial.write(' ');
+
+		for (int i=0; i<4; i++) {
+			if ((pkt->pkt_status_ack.buttons & (1 << i)) != 0)
+				Serial.write('y');
+			else
+				Serial.write('n');
+		}
+		Serial.write(' ');
+
+		ser_printhex16(pkt->pkt_status_ack.ip);
+		Serial.write(' ');
+
+		ser_printhex16(pkt->pkt_status_ack.buzzer);
+		Serial.write(' ');
+
+		for (int i=0; i < 3; i++)
+			ser_printhex(pkt->pkt_status_ack.rgb[i]);
+		Serial.write(' ');
+
+		ser_printhex16(pkt->pkt_status_ack.eventmask);
+		Serial.write('\n');
+		break;
+
+	case 'W':
+	case 'w':
+	case 'R':
+	case 'r':
+		/* TBD */
+		break;
+	}
+}
+
 void ser_poll()
 {
 	if (!Serial.available())
@@ -243,15 +383,15 @@ void ser_poll()
 		/* set pkttype */
 		sendbuf.pkttype = cmd;
 
+		/* parse seq num */
+		sendbuf.seqnum = ser_readhex();
+
 		/* parse src and dest mac addr */
 		ser_readmac(sendbuf.src);
 		ser_readmac(sendbuf.dst);
 
-		/* parse seq num */
-		sendbuf.seqnum = ser_readhex16();
-
 		/* size of generic pkt header */
-		sendbuf_len = (byte*)&sendbuf.dst[7] - (byte*)&sendbuf;
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
 		
 		switch (cmd)
 		{
