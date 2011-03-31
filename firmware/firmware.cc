@@ -152,12 +152,12 @@ int ser_readeventtype()
 		char ch = ser_readbyte();
 		switch(ch) {
 			default:
-				set_goteol = true;
+				ser_goteol = true;
 				/* fall through */
 			case ET_BUTTON_PRESS:
 			case ET_BUTTON_RELEASE:
 			case ET_USER:
-				return ch
+				return ch;
 			case ' ':
 			case '\t':
 				continue;
