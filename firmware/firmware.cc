@@ -24,7 +24,61 @@ void net_send();
 
 void net_proc()
 {
-	/* TBD */
+	switch(recvbuf.pkttype) {
+		case 'S':
+			// TBD: vm state handling (start, stop, ip)
+			if(recvbuf.pkt_status.set_rgb)
+				rgb(recvbuf.pkt_status.rgb_val[0], recvbuf.pkt_status.rgb_val[1], recvbuf.pkt_status.rgb_val[2]);
+			if(recvbuf.pkt_status.set_buzzer)
+				buzzer(recvbuf.pkt_status.buzzer_val);
+			for(uint8_t i = 0; i < 4; ++i)
+				if(recvbuf.pkt_status.set_leds & (1<<i))
+					led(i, recvbuf.pkt_status.leds_val & (1<<i));
+			// TBD eventmask
+
+			sendbuf.pkttype = 's';
+			sendbuf.seqnum = ++last_send_seq;
+			memcpy(&sendbuf.dst, &recvbuf.src, 8);
+			memcpy(&sendbuf.src, &my_addr, 8);
+			sendbuf_len = SENDBUF_BASESIZE + sizeof(sendbuf.pkt_status_ack);
+
+			// TBD: vm state handling (start, stop, ip)
+			sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
+			sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
+			sendbuf.pkt_status_ack.buzzer = getbuzzer();
+			sendbuf.pkt_status_ack.rgb[0] = getrgb(0);
+			sendbuf.pkt_status_ack.rgb[1] = getrgb(1);
+			sendbuf.pkt_status_ack.rgb[2] = getrgb(2);
+			// TBD eventmask
+
+			// send just once -- if the ack gets lost, the host
+			// will send another 'S' with the same sequence number,
+			// net_poll() will recognize the lost ack and just
+			// net_send() again
+			net_send();
+			break;
+		case 's':
+		case 'L':
+		case 'E':
+		case 'w':
+		case 'r':
+			// does not need special processing - those events
+			// typically affect the base station which just needs
+			// the serial output
+
+			// TBD: if(i_am_basestation) send_ack();
+			break;
+		case 'e':
+		case 'l':
+			// should never be needed -- this is sent from base to
+			// device and is already blocked on in net_send.
+			break;
+		case 'W':
+		case 'R':
+			/* TBD, fall through */
+		default:
+			Serial.println("* Received unknown command, not processed.");
+	}
 }
 
 void net_poll()
