@@ -126,6 +126,25 @@ int ser_readtri()
 	}
 }
 
+int ser_readeventtype()
+{
+	while (1) {
+		char ch = ser_readbyte();
+		switch(ch) {
+			default:
+				set_goteol = true;
+				/* fall through */
+			case ET_BUTTON_PRESS:
+			case ET_BUTTON_RELEASE:
+			case ET_USER:
+				return ch
+			case ' ':
+			case '\t':
+				continue;
+		}
+	}
+}
+
 void ser_poll()
 {
 	if (!Serial.available())
@@ -170,7 +189,7 @@ void ser_poll()
 			break;
 		case 'E':
 			sendbuf_len += sizeof(sendbuf.pkt_event);
-			sendbuf.pkt_event.event_type = ser_readhex();
+			sendbuf.pkt_event.event_type = ser_readeventtype();
 			sendbuf.pkt_event.event_payload = ser_readhex16();
 			break;
 		case 'e':

@@ -50,9 +50,9 @@ enum pkttype_e
 
 enum event_e
 {
-	ET_BUTTON_DOWN = 1,
-	ET_BUTTON_UP = 2,
-	ET_USER = 3
+	ET_BUTTON_PRESS = 'p',
+	ET_BUTTON_RELEASE = 'r',
+	ET_USER = 'u'
 };
 
 struct pktbuffer_s

@@ -24,7 +24,19 @@ are either boolean / tristate ('y' for yes and 'n' for no, 'z' for don't
 change) or hex encoded. The convention with letters is that the capital command
 is sent first and the minuscle is sent as a response. The commands are:
 
-* 'L': Login; sent by a device on power-on if an address is encoded in EEPROM; ...
+* 'L': Login; sent by a device on power-on if an address is encoded in EEPROM
+  or if an iButton is detected (in that case, the iButton's MAC address is used
+  as the new device address); the only argument is a boolean indicating the
+  presence of an iButton.
+
+* 'l': Acknowledgement for 'L' (no arguments)
+
+* 'E': Event sent by the device, arguments are `<type> <payload>`, where type
+  is 'p' for button press, 'r' for button release or 'u' for user event (sent
+  by the VM), and payload are two byte hex encoding the pin number or some
+  other data.
+
+* 'e': Acknowledgement for 'e' (no arguments)
 
 * 'S': Set the state of the device. Command specific arguments are
 
@@ -42,12 +54,43 @@ is sent first and the minuscle is sent as a response. The commands are:
       * set rgb: boolean. if true, set the RGB LED to the three hex byte values
         in r/g/b
       * set buzzer: boolean. if true, set the buzzer to the frequency in buzzer
-        (2 byte hex), or turn the buzzer off it is 00 00.
+        (2 byte hex encoding Hz), or turn the buzzer off it is 00 00.
       * led0 to 3: four tri-states to turn the respective LEDs on, off, or keep
         them as they are
       * mask button0 to 4 up or down: tri-states that define whether or not up
 	or down movement of the respective button should be reported as an
         event packet or not.
+
+* 's': Acknowledgement for 's', returns current state of the device. Custom
+  arguments are:
+
+    <vm running> <led0>..<led3> <button0>..<button3> <ip> <buzzer> <r> <g> <b>
+    <eventmask>
+
+  The arguments are:
+
+    * vm running: boolean; true if VM is running
+    * led0 to 3: four booleans indicating which LEDs are on
+    * button0 to 3: four booleans indicating which buttons are pressed
+      (independent of the event mask)
+    * ip: current value of the instruction pointer (2 byte hex)
+    * buzzer: current vaue of the buzzer in Hz (2 byte hex) of 0 for off
+    * r, g, b: hex bytes for red/green/blue part of RGB LED
+    * eventmask: one byte hex whose bits represent which events ("button 0
+      down" (bit 0), "button 0 up" (bit 1), etc. to "button 3 up" (bit 7)) will
+      actually trigger 'E' events
+
+* 'W', 'R', 'w', 'r': write data to VM scratchpad RAM or program code and
+  appropriate acknowledgements (TBD)
+
+Direct control
+--------------
+
+Not yet implemented, but there will be commands that directly affect the
+connected device. Most important thereof will be the 'enable / disable base
+station mode' in which the device will outsource retransmission to the host
+(while still ack'ing incoming packages to keep round-trips short). Promiscuous
+mode could be another such setting.
 
 Comments
 --------
