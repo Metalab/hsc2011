@@ -22,7 +22,24 @@ void net_proc();
 void net_poll();
 void net_send();
 
+uint8_t ser_readbyte();
+void ser_readeol();
+uint8_t ser_readhex();
+uint16_t ser_readhex16();
+int ser_readmac(uint8_t *buf);
+bool ser_readbool();
+int ser_readtri();
+int ser_readeventtype();
+
+void ser_printhex(uint8_t val);
+void ser_printhex16(uint16_t val);
 void ser_printpkt(struct pktbuffer_s *pkt);
+
+void ser_poll();
+
+/************************************************************
+ *                          Network                         *
+ ************************************************************/
 
 void net_proc()
 {
@@ -126,6 +143,11 @@ void net_send()
 	// wait for ack if needed and resend - TBD
 }
 
+
+/************************************************************
+ *                        Serial I/O                        *
+ ************************************************************/
+
 bool ser_goteol;
 uint8_t ser_unget_char;
 
@@ -143,6 +165,12 @@ uint8_t ser_readbyte()
 	if (c == '\n' || c == '\r')
 		ser_goteol = true;
 	return c;
+}
+
+void ser_readeol()
+{
+	while (!ser_goteol)
+		ser_readbyte();
 }
 
 uint8_t ser_readhex()
@@ -164,6 +192,13 @@ uint8_t ser_readhex()
 	return val;
 }
 
+uint16_t ser_readhex16()
+{
+	uint16_t val = ser_readhex() << 8;
+	val |= ser_readhex();
+	return val;
+}
+
 int ser_readmac(uint8_t *buf)
 {
 	char cmd = ser_readbyte();
@@ -176,13 +211,6 @@ int ser_readmac(uint8_t *buf)
 		for (int i = 0; i < 8; i++)
 			buf[i] = ser_readhex();
 	}
-}
-
-uint16_t ser_readhex16()
-{
-	uint16_t val = ser_readhex() << 8;
-	val |= ser_readhex();
-	return val;
 }
 
 bool ser_readbool()
@@ -500,21 +528,28 @@ void ser_poll()
 		break;
 
 	default:
-		if (1) {
-			Serial.println("* Unkown cmd in input!");
-		} else {
-parser_error:
-			Serial.println("* Parser error in input!");
-		}
-		/* fall thru */
+		ser_readeol();
+		Serial.println("* Unkown cmd in input!");
+		break;
+
 	case '\r':
 	case '\n':
 	case '*':
-		while (cmd != '\r' && cmd != '\n')
-			cmd = ser_readbyte();
+		ser_readeol();
 		break;
 	}
+
+	if (0) {
+parser_error:
+		ser_readeol();
+		Serial.println("* Parser error in input!");
+	}
 }
+
+
+/************************************************************
+ *                         Main Loop                        *
+ ************************************************************/
 
 void setup()
 {
