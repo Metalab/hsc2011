@@ -236,13 +236,13 @@ void ser_poll()
 				sendbuf.pkt_status.buzzer_val = ser_readhex16();
 
 			sendbuf.pkt_status.set_leds = 0;
-			sendbuf.pkt_status.clear_leds = 0;
+			sendbuf.pkt_status.leds_val = 0;
 			for (int i = 0; i < 4; i++) {
 				int v = ser_readtri();
-				if (v == 1)
-					sendbuf.pkt_status.set_leds |= (1 << i);
-				if (v == 0)
-					sendbuf.pkt_status.clear_leds |= (1 << i);
+				if (v != -1) {
+					sendbuf.pkt_status.set_leds |= 1<<i;
+					sendbuf.pkt_status.leds_val |= v<<i;
+				}
 			}
 
 			sendbuf.pkt_status.eventmask_val = 0xff;
