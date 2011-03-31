@@ -257,8 +257,7 @@ int ser_readeventtype()
 			default:
 				ser_goteol = true;
 				/* fall through */
-			case ET_BUTTON_PRESS:
-			case ET_BUTTON_RELEASE:
+			case ET_BUTTON:
 			case ET_USER:
 				return ch;
 			case ' ':

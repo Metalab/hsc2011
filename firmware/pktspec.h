@@ -50,8 +50,7 @@ enum pkttype_e
 
 enum event_e
 {
-	ET_BUTTON_PRESS = 'p',
-	ET_BUTTON_RELEASE = 'r',
+	ET_BUTTON = 'b',
 	ET_USER = 'u'
 };
 
@@ -81,7 +80,7 @@ struct pktbuffer_s
 
 		struct {
 			uint8_t event_type;
-			uint16_t event_payload; // num of button or user value
+			uint16_t event_payload; // for buttons, bits are just as in the event mask in the lower byte
 		} pkt_event;
 
 		struct {

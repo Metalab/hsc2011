@@ -44,9 +44,10 @@ sent first and the minuscle is sent as a response):
 * 'l': Acknowledgement for 'L' (no arguments)
 
 * 'E': Event sent by the device, arguments are `<type> <payload>`, where type
-  is 'p' for button press, 'r' for button release or 'u' for user event (sent
-  by the VM), and payload are two byte hex encoding the pin number or some
-  other data.
+  is 'b' for button press events or 'u' for user event (sent by the VM), and
+  payload are two byte hex. With button events, the payload's lower byte's
+  structure is the same as for the 'S' command's mask part (lowest bit being
+  "button 0 down").
 
 * 'e': Acknowledgement for 'e' (no arguments)
 
