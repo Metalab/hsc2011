@@ -33,6 +33,7 @@ int ser_readeventtype();
 
 void ser_printhex(uint8_t val);
 void ser_printhex16(uint16_t val);
+void ser_printmac(uint8_t *buf);
 void ser_printpkt(struct pktbuffer_s *pkt);
 
 void ser_poll();
@@ -279,6 +280,12 @@ void ser_printhex16(uint16_t val)
 	ser_printhex(val & 255);
 }
 
+void ser_printmac(uint8_t *buf)
+{
+	for (int i=0; i < 8; i++)
+		ser_printhex(buf[i]);
+}
+
 void ser_printpkt(struct pktbuffer_s *pkt)
 {
 	Serial.write(pkt->hdr.pkttype);
@@ -286,12 +293,10 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 	ser_printhex(pkt->hdr.seqnum);
 	Serial.write(' ');
 
-	for (int i=0; i < 8; i++)
-		ser_printhex(pkt->hdr.src[i]);
+	ser_printmac(pkt->hdr.src);
 	Serial.write(' ');
 
-	for (int i=0; i < 8; i++)
-		ser_printhex(pkt->hdr.dst[i]);
+	ser_printmac(pkt->hdr.dst);
 	Serial.write(' ');
 
 	switch (pkt->hdr.pkttype)
@@ -409,6 +414,35 @@ void ser_poll()
 
 	switch (cmd)
 	{
+	case 'M':
+		switch (ser_readhex())
+		{
+		case 0:
+			if (ser_goteol)
+				break;
+
+			Serial.print("* 1: my mac   = ");
+			ser_printmac(my_addr);
+			Serial.println();
+			
+			Serial.print("* 2: base mac = ");
+			ser_printmac(base_addr);
+			Serial.println();
+			break;
+			
+		case 1:
+			ser_readmac(my_addr);
+			break;
+			
+		case 2:
+			ser_readmac(base_addr);
+			break;
+
+		default:
+			goto parser_error;
+		}
+		break;
+
 	case 'L':
 	case 'l':
 	case 'E':
