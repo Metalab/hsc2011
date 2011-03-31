@@ -17,12 +17,13 @@ RF package commands
 This is the typical case of commands and maps directly to an RF package as
 defined in pktspec.h. The general structure is
 
-    <command letter> <source address> <destination address> <arguments>
+    <command letter> <seqnum> <source address> <destination address>
+    <command specific arguments>
 
-where source and destination address are given in hex code (8 byte). Both can,
-as a short cut, be '*' to indicate the device's own address as defined in
-EEPROM or by the iButton connected or '$' to indicate the currently configured
-base station.
+where seqnum is a 1 byte hex sequence number, source and destination address
+are 8 byte hex values. Both addresses can, as a short cut, be '*' to indicate
+the device's own address as defined in EEPROM or by the iButton connected or
+'$' to indicate the currently configured base station.
 
 Commands sent to '*' (or explicitly to the connected device's MAC address) are
 not put on the air but instead processed as if they were just received over the
