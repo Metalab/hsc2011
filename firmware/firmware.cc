@@ -9,6 +9,7 @@
 #include "pktspec.h"
 #include "hardware.h"
 
+bool basestation;
 uint8_t my_addr[8];
 uint8_t base_addr[8];
 uint16_t last_send_seq = 0;
@@ -25,7 +26,7 @@ uint8_t ser_readbyte();
 void ser_readeol();
 uint8_t ser_readhex();
 uint16_t ser_readhex16();
-int ser_readmac(uint8_t *buf);
+void ser_readmac(uint8_t *buf);
 bool ser_readbool();
 int ser_readtri();
 int ser_readeventtype();
@@ -107,19 +108,21 @@ void net_poll()
 	if (!rf12_recvDone() || rf12_crc != 0)
 		return;
 
+	Serial.print("Got raw pkt: ");
+	for (int i=0; i<8; i++)
+		Serial.write(rf12_data[i]);
+	Serial.println("");
+
 	// does it have the right magic?
-	if (memcmp(sendbuf.hdr.magic, "ML-EDBUZ", 8))
+	if (memcmp((void*)rf12_data, "ML-EDBUZ", 8))
 		return;
 
 	// is it for us?
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
 		return;
 
-	// we ignore the sequence numbers
-
 	// copy to recv buffer
 	memcpy(&recvbuf, (void*)rf12_data, rf12_len);
-	last_recv_seq = recvbuf.hdr.seqnum;
 
 	// procces
 	net_proc();
@@ -162,8 +165,10 @@ uint8_t ser_readbyte()
 		return c;
 	}
 	while ((c = Serial.read()) == -1) { }
-	if (c == '\n' || c == '\r')
+	if (c == '\n' || c == '\r') {
 		ser_goteol = true;
+		return '\n';
+	}
 	return c;
 }
 
@@ -199,17 +204,23 @@ uint16_t ser_readhex16()
 	return val;
 }
 
-int ser_readmac(uint8_t *buf)
+void ser_readmac(uint8_t *buf)
 {
-	char cmd = ser_readbyte();
-	if (cmd == '*') {
-		memcpy(buf, my_addr, 8);
-	} else if (cmd == '$') {
-		memcpy(buf, base_addr, 8);
-	} else {
-		ser_unget_char = cmd;
-		for (int i = 0; i < 8; i++)
-			buf[i] = ser_readhex();
+	while (1)
+	{
+		char cmd = ser_readbyte();
+		if (cmd == ' ' || cmd == '\t') {
+			continue;
+		} else if (cmd == '*') {
+			memcpy(buf, my_addr, 8);
+		} else if (cmd == '$') {
+			memcpy(buf, base_addr, 8);
+		} else {
+			ser_unget_char = cmd;
+			for (int i = 0; i < 8; i++)
+				buf[i] = ser_readhex();
+		}
+		return;
 	}
 }
 

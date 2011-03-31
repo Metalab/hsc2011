@@ -14,11 +14,11 @@
 //     using an exponential function and has a random component to
 //     avoid repeated collisions
 //
-//   - the login and login_ack pkts are using the sequence number 0.
-//     each station incrases the sequence number for each pkt it sends.
-//     the sequence numbers are only used to detect duplicates on lost
-//     ack packages. in this case the last response is resent but no
-//     additional action is performed.
+//   - each station incrases the sequence number for each initiation pkt
+//     it sends (uppercase pkt types). the responses are sent with the same
+//     sequence number as the request triggering the resonse. in case of
+//     resends it is possible that a packet is processed twice. the
+//     application must be able to deal with such events.
 //
 //   - the login may be sent to 0:0:0:0:0:0:0:0 in which case the first
 //     basestation that acks the pkt is further used as basestation for
