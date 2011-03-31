@@ -110,13 +110,13 @@ void net_poll()
 		return;
 
 	Serial.print("Got raw pkt: ");
-	for (int i=0; i<8; i++)
+	for (int i=0; i<HEADER_MAGIC_LENGTH; i++)
 		Serial.write(rf12_data[i]);
 	Serial.println("");
 
 	// does it have the right magic?
-	if (memcmp((void*)rf12_data, "ML-EDBUZ", 8))
-		return;
+	if (memcmp((void*)rf12_data, HEADER_MAGIC, HEADER_MAGIC_LENGTH))
+		return false;
 
 	// is it for us?
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
@@ -136,7 +136,7 @@ void net_send()
 		rf12_recvDone();
 
 	/* write magic */
-	memcpy(sendbuf.hdr.magic, "ML-EDBUZ", 8);
+	memcpy(sendbuf.hdr.magic, HEADER_MAGIC, HEADER_MAGIC_LENGTH);
 
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);

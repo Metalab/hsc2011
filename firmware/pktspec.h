@@ -26,6 +26,9 @@
 //
 // For details about the meanings of the fields, see README.serialprotocol
 
+#define HEADER_MAGIC "ML-EDUBUZ"
+#define HEADER_MAGIC_LENGTH 8
+
 enum pkttype_e
 {
 	/* initiated by buzzer, acked by basestation */
@@ -56,7 +59,7 @@ enum event_e
 
 struct pktbuffer_hdr_s
 {
-	uint8_t magic[8];
+	uint8_t magic[HEADER_MAGIC_LENGTH];
 
 	uint8_t pkttype;
 	uint8_t seqnum;
