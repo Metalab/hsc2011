@@ -9,6 +9,10 @@ sent, and the device will send a line for every packet it receives.
 Every line starts with a letter indicating the type of command being described
 in the line. 
 
+Arguments are either boolean / tristate ('y' for yes and 'n' for no, 'z' for
+don't change) or hex encoded; individual commands might implement other
+argument formats as well.
+
 The commands are grouped in three categories:
 
 RF package commands
@@ -29,11 +33,8 @@ Commands sent to '*' (or explicitly to the connected device's MAC address) are
 not put on the air but instead processed as if they were just received over the
 air (e.g. for controlling the base station's LEDs / keys).
 
-Command specific arguments are either boolean / tristate ('y' for yes and 'n'
-for no, 'z' for don't change) or hex encoded. The convention with letters is
-that the capital command is sent first and the minuscle is sent as a response.
-
-The commands are:
+The commands are (the convention with letters is that the capital command is
+sent first and the minuscle is sent as a response):
 
 * 'L': Login; sent by a device on power-on if an address is encoded in EEPROM
   or if an iButton is detected (in that case, the iButton's MAC address is used
@@ -97,11 +98,16 @@ The commands are:
 Direct control
 --------------
 
-Not yet implemented, but there will be commands that directly affect the
-connected device. Most important thereof will be the 'enable / disable base
-station mode' in which the device will outsource retransmission to the host
-(while still ack'ing incoming packages to keep round-trips short). Promiscuous
-mode could be another such setting.
+Commands directly affecting the connected device.
+
+* 'M' <which> <address>: Set the MAC address specified in which (one byte hex;
+  1: own address, 2: base station) to the address (eight byte hex). If which is
+  0, the currently configured MAC addresses are printed in comments. TBD:
+  setting to RAM or EEPROM.
+
+The rest is not yet implemented: 'enable / disable base station mode' (in which
+the device will outsource retransmission to the host, while still ack'ing
+incoming packages to keep round-trips short) and promiscuous mode.
 
 Comments
 --------
