@@ -1,0 +1,58 @@
+Serial communication
+====================
+
+Both base station and buzzers are capable of communicating on the serial line.
+Serial communication is ASCII and line based. Most of the serial communication
+reflects RF commands; the host can send lines that result in an RF packet to be
+sent, and the device will send a line for every packet it receives.
+
+Every line starts with a letter indicating the type of command being described
+in the line. 
+
+The commands are grouped in three categories:
+
+Package commands
+----------------
+
+This is the typical case of commands and maps directly to an RF package as
+defined in pktspec.h. The general structure is
+
+    <command letter> <destination address> <command-specific arguments>
+
+where the destination address is given in hex code. Command specific arguments
+are either boolean / tristate ('y' for yes and 'n' for no, 'z' for don't
+change) or hex encoded. The convention with letters is that the capital command
+is sent first and the minuscle is sent as a response. The commands are:
+
+* 'L': Login; sent by a device on power-on if an address is encoded in EEPROM; ...
+
+* 'S': Set the state of the device. Command specific arguments are
+
+    <vm start> <vm stop> <set ip> [<ip>] <set rgb> [<r> <g> <b>] <set buzzer>
+    [<buzzer>] <led0>..<led3> <mask button0 down> <mask button0 up>..<mask
+    button3 down> <mask button0 up>
+
+  The arguments are:
+
+      * vm start: boolean. start the virtual machine
+      * vm stop: boolean. stop the virtual machine (if both are set, the VM
+        will execute exactly one iteration)
+      * set ip: boolean. if true, set the instruction pointer to the value ip
+        (2 byte hex)
+      * set rgb: boolean. if true, set the RGB LED to the three hex byte values
+        in r/g/b
+      * set buzzer: boolean. if true, set the buzzer to the frequency in buzzer
+        (2 byte hex), or turn the buzzer off it is 00 00.
+      * led0 to 3: four tri-states to turn the respective LEDs on, off, or keep
+        them as they are
+      * mask button0 to 4 up or down: tri-states that define whether or not up
+	or down movement of the respective button should be reported as an
+        event packet or not.
+
+Comments
+--------
+
+Empty lines and lines starting with '*' are ignored by the device. The device
+may generate such lines for debugging reasons; for example, if the host sends a
+command unknown to the device, it will response with a '*' followed by an error
+message.

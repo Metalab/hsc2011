@@ -24,6 +24,7 @@
 //     basestation that acks the pkt is further used as basestation for
 //     this session.
 //
+// For details about the meanings of the fields, see README.serialprotocol
 
 enum pkttype_e
 {
