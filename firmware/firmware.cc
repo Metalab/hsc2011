@@ -64,12 +64,18 @@ void net_send()
 }
 
 bool ser_goteol;
+uint8_t ser_unget_char;
 
 uint8_t ser_readbyte()
 {
 	int c;
 	if (ser_goteol)
 		return '\n';
+	if (ser_unget_char != 0) {
+		c = ser_unget_char;
+		ser_unget_char = 0;
+		return c;
+	}
 	while ((c = Serial.read()) == -1) { }
 	if (c == '\n' || c == '\r')
 		ser_goteol = true;
@@ -93,6 +99,20 @@ uint8_t ser_readhex()
 			i--;
 	}
 	return val;
+}
+
+int ser_readmac(uint8_t *buf)
+{
+	char cmd = ser_readbyte();
+	if (cmd == '*') {
+		memcpy(buf, my_addr, 8);
+	} else if (cmd == '$') {
+		memcpy(buf, base_addr, 8);
+	} else {
+		ser_unget_char = cmd;
+		for (int i = 0; i < 8; i++)
+			buf[i] = ser_readhex();
+	}
 }
 
 uint16_t ser_readhex16()
@@ -151,6 +171,7 @@ void ser_poll()
 		return;
 
 	ser_goteol = false;
+	ser_unget_char = 0;
 	char cmd = ser_readbyte();
 
 	switch (cmd)
@@ -165,14 +186,13 @@ void ser_poll()
 	case 'w':
 	case 'R':
 	case 'r':
-		/* set what we know for sure already */
+		/* set pkttype */
 		sendbuf.pkttype = cmd;
-		memcpy(&sendbuf.src, my_addr, 8);
 
-		/* parse dest mac addr */
-		for (int i = 0; i < 8; i++)
-			sendbuf.dst[i] = ser_readhex();
-		
+		/* parse src and dest mac addr */
+		ser_readmac(sendbuf.src);
+		ser_readmac(sendbuf.dst);
+
 		/* parse seq num */
 		sendbuf.seqnum = ser_readhex16();
 
