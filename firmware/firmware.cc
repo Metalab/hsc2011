@@ -26,6 +26,8 @@ void ser_printpkt(struct pktbuffer_s *pkt);
 
 void net_proc()
 {
+	ser_printpkt(&recvbuf);
+
 	switch(recvbuf.hdr.pkttype) {
 		case 'S':
 			// TBD: vm state handling (start, stop, ip)
@@ -122,6 +124,9 @@ void net_send()
 
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);
+
+	Serial.write('* just sent: ');
+	ser_printpkt(&sendbuf);
 
 	// wait for ack if needed and resend - TBD
 }
