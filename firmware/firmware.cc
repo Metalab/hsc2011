@@ -142,7 +142,7 @@ void net_send()
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);
 
-	Serial.write('* just sent: ');
+	Serial.print("* just sent: ");
 	ser_printpkt(&sendbuf);
 
 	// wait for ack if needed and resend - TBD
@@ -346,7 +346,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 			else
 				Serial.write('n');
 		}
-		Serial.write('\n');
 		break;
 
 	case 's':
@@ -380,7 +379,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		Serial.write(' ');
 
 		ser_printhex16(pkt->pkt_status_ack.eventmask);
-		Serial.write('\n');
 		break;
 
 	case 'W':
@@ -390,6 +388,8 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		/* TBD */
 		break;
 	}
+
+	Serial.println("");
 }
 
 void ser_poll()
