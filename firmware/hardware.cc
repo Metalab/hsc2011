@@ -112,21 +112,25 @@ void hw_setup()
 	for (int i=0; i<4; i++) {
 		pinMode(ledPins[i], OUTPUT);
 		digitalWrite(ledPins[i], LOW);
-		led(i, 0);
 	}
 
 	// the buzzer is an output
 	pinMode(buzzerPin, OUTPUT);
 	digitalWrite(buzzerPin, LOW);
-	buzzer(0);
 
 	// RGB Leds are also outputs
 	for (int i=0; i<3; i++) {
 		pinMode(rgbPins[i], OUTPUT);
 		digitalWrite(rgbPins[i], LOW);
 	}
-	rgb(0, 0, 0);
 
 	Serial.println("* Init done. Entering main loop.");
 }
 
+
+void hw_reset_soft()
+{
+	for(int i=0; i<4; ++i) led(i, 0);
+	buzzer(0);
+	rgb(0, 0, 0);
+}

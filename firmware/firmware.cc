@@ -18,6 +18,8 @@ uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
 struct pktbuffer_s recvbuf;
 
+bool do_soft_reset = true;
+
 void net_proc();
 void net_poll();
 void net_send();
@@ -595,6 +597,16 @@ parser_error:
  *                         Main Loop                        *
  ************************************************************/
 
+/* called from the main loop when contact with the base station is lost */
+void reset_soft() {
+	do_soft_reset = false;
+	hw_reset_soft();
+
+	/* TBD: send LOGIN if eeprom mac is found -- use modified form or
+	 * modify net_send_until_acked so serial communication stays possible
+	 * */
+}
+
 void setup()
 {
 	hw_setup();
@@ -602,6 +614,8 @@ void setup()
 
 void loop()
 {
+	if(do_soft_reset) reset_soft();
+
 	net_poll();
 	ser_poll();
 

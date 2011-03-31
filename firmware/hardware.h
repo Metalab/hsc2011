@@ -14,5 +14,6 @@ extern byte getrgb(byte n);
 extern void buzzer(uint16_t freq);
 extern uint16_t getbuzzer();
 extern void hw_setup();
+extern void hw_reset_soft();
 
 #endif
