@@ -26,7 +26,7 @@ void ser_printpkt(struct pktbuffer_s *pkt);
 
 void net_proc()
 {
-	switch(recvbuf.pkttype) {
+	switch(recvbuf.hdr.pkttype) {
 		case 'S':
 			// TBD: vm state handling (start, stop, ip)
 			if(recvbuf.pkt_status.set_rgb)
@@ -38,11 +38,11 @@ void net_proc()
 					led(i, recvbuf.pkt_status.leds_val & (1<<i));
 			// TBD eventmask
 
-			sendbuf.pkttype = 's';
-			sendbuf.seqnum = ++last_send_seq;
-			memcpy(&sendbuf.dst, &recvbuf.src, 8);
-			memcpy(&sendbuf.src, &my_addr, 8);
-			sendbuf_len = SENDBUF_BASESIZE + sizeof(sendbuf.pkt_status_ack);
+			sendbuf.hdr.pkttype = 's';
+			sendbuf.hdr.seqnum = ++last_send_seq;
+			memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+			memcpy(&sendbuf.hdr.src, &my_addr, 8);
+			sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
 			// TBD: vm state handling (start, stop, ip)
 			sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
@@ -90,22 +90,22 @@ void net_poll()
 		return;
 
 	// does it have the right magic?
-	if (memcmp(sendbuf.magic, "ML-EDBUZ", 8))
+	if (memcmp(sendbuf.hdr.magic, "ML-EDBUZ", 8))
 		return;
 
 	// is it for us?
-	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->dst, 8))
+	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
 		return;
 
 	// is it really new?
-	if (((struct pktbuffer_s*)rf12_data)->seqnum == last_recv_seq) {
+	if (((struct pktbuffer_s*)rf12_data)->hdr.seqnum == last_recv_seq) {
 		net_send();
 		return;
 	}
 
 	// copy to recv buffer
 	memcpy(&recvbuf, (void*)rf12_data, rf12_len);
-	last_recv_seq = recvbuf.seqnum;
+	last_recv_seq = recvbuf.hdr.seqnum;
 
 	// procces
 	net_proc();
@@ -118,7 +118,7 @@ void net_send()
 		rf12_recvDone();
 
 	/* write magic */
-	memcpy(sendbuf.magic, "ML-EDBUZ", 8);
+	memcpy(sendbuf.hdr.magic, "ML-EDBUZ", 8);
 
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);
@@ -242,20 +242,20 @@ void ser_printhex16(uint16_t val)
 
 void ser_printpkt(struct pktbuffer_s *pkt)
 {
-	Serial.write(pkt->pkttype);
+	Serial.write(pkt->hdr.pkttype);
 	Serial.write(' ');
-	ser_printhex(pkt->seqnum);
-	Serial.write(' ');
-
-	for (int i=0; i < 8; i++)
-		ser_printhex(pkt->src[i]);
+	ser_printhex(pkt->hdr.seqnum);
 	Serial.write(' ');
 
 	for (int i=0; i < 8; i++)
-		ser_printhex(pkt->dst[i]);
+		ser_printhex(pkt->hdr.src[i]);
 	Serial.write(' ');
 
-	switch (pkt->pkttype)
+	for (int i=0; i < 8; i++)
+		ser_printhex(pkt->hdr.dst[i]);
+	Serial.write(' ');
+
+	switch (pkt->hdr.pkttype)
 	{
 	case 'L':
 		Serial.write(pkt->pkt_login.using_ibutton ? 'y' : 'n');
@@ -381,14 +381,14 @@ void ser_poll()
 	case 'R':
 	case 'r':
 		/* set pkttype */
-		sendbuf.pkttype = cmd;
+		sendbuf.hdr.pkttype = cmd;
 
 		/* parse seq num */
-		sendbuf.seqnum = ser_readhex();
+		sendbuf.hdr.seqnum = ser_readhex();
 
 		/* parse src and dest mac addr */
-		ser_readmac(sendbuf.src);
-		ser_readmac(sendbuf.dst);
+		ser_readmac(sendbuf.hdr.src);
+		ser_readmac(sendbuf.hdr.dst);
 
 		/* size of generic pkt header */
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
