@@ -11,8 +11,7 @@
 
 uint8_t my_addr[8];
 uint8_t base_addr[8];
-uint16_t last_send_seq;
-uint16_t last_recv_seq;
+uint16_t last_send_seq = 0;
 
 uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
@@ -58,7 +57,7 @@ void net_proc()
 			// TBD eventmask
 
 			sendbuf.hdr.pkttype = 's';
-			sendbuf.hdr.seqnum = ++last_send_seq;
+			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
 			memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
 			memcpy(&sendbuf.hdr.src, &my_addr, 8);
 			sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
@@ -116,11 +115,7 @@ void net_poll()
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
 		return;
 
-	// is it really new?
-	if (((struct pktbuffer_s*)rf12_data)->hdr.seqnum == last_recv_seq) {
-		net_send();
-		return;
-	}
+	// we ignore the sequence numbers
 
 	// copy to recv buffer
 	memcpy(&recvbuf, (void*)rf12_data, rf12_len);
