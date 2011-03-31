@@ -11,18 +11,28 @@ in the line.
 
 The commands are grouped in three categories:
 
-Package commands
-----------------
+RF package commands
+-------------------
 
 This is the typical case of commands and maps directly to an RF package as
 defined in pktspec.h. The general structure is
 
-    <command letter> <destination address> <command-specific arguments>
+    <command letter> <source address> <destination address> <arguments>
 
-where the destination address is given in hex code. Command specific arguments
-are either boolean / tristate ('y' for yes and 'n' for no, 'z' for don't
-change) or hex encoded. The convention with letters is that the capital command
-is sent first and the minuscle is sent as a response. The commands are:
+where source and destination address are given in hex code (8 byte). Both can,
+as a short cut, be '*' to indicate the device's own address as defined in
+EEPROM or by the iButton connected or '$' to indicate the currently configured
+base station.
+
+Commands sent to '*' (or explicitly to the connected device's MAC address) are
+not put on the air but instead processed as if they were just received over the
+air (e.g. for controlling the base station's LEDs / keys).
+
+Command specific arguments are either boolean / tristate ('y' for yes and 'n'
+for no, 'z' for don't change) or hex encoded. The convention with letters is
+that the capital command is sent first and the minuscle is sent as a response.
+
+The commands are:
 
 * 'L': Login; sent by a device on power-on if an address is encoded in EEPROM
   or if an iButton is detected (in that case, the iButton's MAC address is used
