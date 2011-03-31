@@ -55,10 +55,23 @@ enum event_e
 	ET_USER = 'u'
 };
 
+struct pktbuffer_hdr_s
+{
+	uint8_t magic[8];
+
+	uint8_t pkttype;
+	uint8_t seqnum;
+
+	uint8_t src[8]; // sender
+	uint8_t dst[8]; // reciever
+};
+
 struct pktbuffer_s
 {
+	uint8_t magic[8];
+
 	uint8_t pkttype;
-	uint16_t seqnum;
+	uint8_t seqnum;
 
 	uint8_t src[8]; // sender
 	uint8_t dst[8]; // reciever
