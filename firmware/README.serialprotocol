@@ -120,3 +120,19 @@ Empty lines and lines starting with '*' are ignored by the device. The device
 may generate such lines for debugging reasons; for example, if the host sends a
 command unknown to the device, it will response with a '*' followed by an error
 message.
+
+Terminal Echo
+-------------
+
+Commands are echoed back to the PC. The echoes are prefixed with a '-' character.
+Terminal echo can be turned on by sending a '-' character and turned off using the
+'+' character. The terminal echo is enabled per default.
+
+Sync Sequence
+-------------
+
+A line sent to the device that is prefixed with '=' is echoed back with "=== "
+before and " ===" after it. This may be used to syncronize the serial communication.
+A synchronization line showing Pi to 50 decimal digits is sent by the device upon
+power up.
+

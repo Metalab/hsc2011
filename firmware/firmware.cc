@@ -214,6 +214,7 @@ bool net_send_until_acked(uint8_t ack_type)
  ************************************************************/
 
 bool ser_echo;
+bool ser_noecho;
 bool ser_goteol;
 uint8_t ser_unget_char;
 
@@ -232,14 +233,14 @@ uint8_t ser_readbyte()
 		ser_goteol = true;
 		return '\n';
 	}
-	if (ser_echo)
+	if (ser_echo && !ser_noecho)
 		Serial.write(c);
 	return c;
 }
 
 void ser_endecho()
 {
-	if (ser_echo)
+	if (ser_echo && !ser_noecho)
 		Serial.println(ser_goteol ? "" : "...");
 	ser_echo = false;
 }
@@ -474,13 +475,35 @@ void ser_poll()
 	if (!Serial.available())
 		return;
 
-	Serial.print('-');
-	ser_echo = true;
-
 	ser_goteol = false;
 	ser_unget_char = 0;
 	char cmd = ser_readbyte();
 
+	if (cmd == '-') {
+		ser_noecho = false;
+		Serial.println("* Terminal echo ENABLED.");
+		return;
+	}
+
+	if (cmd == '+') {
+		ser_noecho = true;
+		Serial.println("* Terminal echo DISABLED.");
+		return;
+	}
+
+	if (cmd == '=') {
+		Serial.print("=== ");
+		while ((cmd = ser_readbyte()) != '\n')
+			Serial.write(cmd);
+		Serial.println(" ===");
+		return;
+	}
+
+	if (!ser_noecho) {
+		Serial.write('-');
+		Serial.write(cmd);
+		ser_echo = true;
+	}
 
 	switch (cmd)
 	{
