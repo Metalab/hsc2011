@@ -51,12 +51,16 @@ enum pkttype_e
 	PKTT_WRITE_ACK = 'w',
 
 	PKTT_READ = 'R',
-	PKTT_READ_ACK = 'r'
+	PKTT_READ_ACK = 'r',
+
+	PKTT_RESET = 'X',
+	PKTT_RESET_ACK = 'x'
 };
 
 enum event_e
 {
 	ET_BUTTON = 'b',
+	ET_PING = 'p',
 	ET_USER = 'u'
 };
 
@@ -142,6 +146,12 @@ struct pktbuffer_s
 			uint16_t addr;
 			uint8_t data[32];
 		} pkt_read_ack;
+
+		struct {
+		} pkt_reset;
+
+		struct {
+		} pkt_reset_ack;
 	};
 };
 

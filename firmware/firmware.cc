@@ -10,10 +10,15 @@
 #include "pktspec.h"
 #include "hardware.h"
 
+// resend interval in ms from the first attempt to send; chosen arbitrarily
+int16_t net_resend_delays[] = { 20, 80, 200, 300, 400, 500, 500 };
+#define NET_PING_TIMEOUT 30000
+
 bool basestation;
 uint8_t my_addr[8];
 uint8_t base_addr[8];
 uint16_t last_send_seq;
+uint16_t last_ping;
 
 uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
@@ -27,8 +32,6 @@ void net_proc();
 bool net_poll();
 void net_send();
 bool net_send_until_acked(uint8_t ack_type);
-#define NET_RESEND_DELAYS 5
-int16_t net_resend_delays[NET_RESEND_DELAYS] = {20, 100, 300, 800, 1500}; // resend interval in ms from the first attempt to send; chosen arbitrarily
 
 uint8_t ser_readbyte();
 void ser_endecho();
@@ -125,6 +128,16 @@ void net_proc()
 	case 'W':
 	case 'R':
 		/* TBD, fall through */
+	case 'X':
+		// ack reset
+		sendbuf.hdr.pkttype = 'x';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
+		net_send();
+		do_soft_reset = true;
+		break;
 	default:
 		Serial.println("* Received unknown command, not processed.");
 	}
@@ -178,6 +191,7 @@ bool net_send_until_acked(uint8_t ack_type)
 	uint16_t delta_t;
 	uint32_t first_send;
 	uint8_t resend_number = 0;
+	uint8_t resend_extra_delay = random(net_resend_delays[0]);
 
 	net_send();
 	first_send = millis();
@@ -190,13 +204,15 @@ bool net_send_until_acked(uint8_t ack_type)
 			if (recvbuf.hdr.pkttype == ack_type && recvbuf.hdr.seqnum == last_send_seq)
 			{
 				Serial.println("* Acknowledgement received, continuing.");
+				if (!basestation)
+					last_ping = millis();
 				return true;
 			}
 		}
 		delta_t = (uint16_t)(millis() - first_send);
 		if (delta_t > net_resend_delays[resend_number]) {
-			++resend_number;
-			if (resend_number == NET_RESEND_DELAYS) {
+			resend_extra_delay = random(net_resend_delays[++resend_number]);
+			if (resend_number == sizeof(net_resend_delays)/sizeof(*net_resend_delays)) {
 				Serial.println("* Giving up resending, starting soft-reset.");
 				do_soft_reset = true;
 				return false;
@@ -334,6 +350,7 @@ int ser_readeventtype()
 			ser_goteol = true;
 			/* fall through */
 		case ET_BUTTON:
+		case ET_PING:
 		case ET_USER:
 			return ch;
 		case ' ':
@@ -467,6 +484,10 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 	case 'r':
 		/* TBD */
 		break;
+
+	case 'X':
+	case 'x':
+		break;
 	}
 
 	Serial.println("");
@@ -579,6 +600,8 @@ void ser_poll()
 	case 'w':
 	case 'R':
 	case 'r':
+	case 'X':
+	case 'x':
 		/* set pkttype */
 		sendbuf.hdr.pkttype = cmd;
 
@@ -671,6 +694,9 @@ void ser_poll()
 		case 'r':
 			/* TBD */
 			break;
+		case 'X':
+		case 'x':
+			break;
 		}
 
 		/* we should not have seen an end of line yet */
@@ -744,6 +770,11 @@ void evt_poll()
 	sendbuf.pkt_event.event_payload = button_event;
 
 	net_send_until_acked('e');
+
+#if 0
+	// button presses are random events...
+	randomSeed(random(0xffff) ^ millis());
+#endif
 }
 
 
@@ -781,6 +812,12 @@ void reset_soft()
 	evt_button_mask = 0;
 	evt_button_last = 0;
 	last_send_seq = 0;
+
+	randomSeed(random(0xffff) ^ millis());
+	randomSeed(random(0xffff) ^ (my_addr[1] << 8 | my_addr[0]));
+	randomSeed(random(0xffff) ^ (my_addr[3] << 8 | my_addr[2]));
+	randomSeed(random(0xffff) ^ (my_addr[5] << 8 | my_addr[4]));
+	randomSeed(random(0xffff) ^ (my_addr[7] << 8 | my_addr[6]));
 
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked
@@ -841,6 +878,18 @@ void loop()
 	}
 	else
 	{
+		uint16_t timeout = millis() - last_ping;
+		if (!basestation && timeout > NET_PING_TIMEOUT) {
+			sendbuf.hdr.pkttype = 'E';
+			sendbuf.hdr.seqnum = ++last_send_seq;
+			memcpy(&sendbuf.hdr.dst, &base_addr, 8);
+			memcpy(&sendbuf.hdr.src, &my_addr, 8);
+			sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_event);
+			sendbuf.pkt_event.event_type = ET_PING;
+			sendbuf.pkt_event.event_payload = timeout;
+			net_send_until_acked('e');
+			return;
+		}
 		if (net_poll())
 			net_proc();
 		evt_poll();
