@@ -13,7 +13,7 @@
 bool basestation;
 uint8_t my_addr[8];
 uint8_t base_addr[8];
-uint16_t last_send_seq;
+uint16_t last_send_seq = 0;
 
 uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
@@ -780,7 +780,6 @@ void reset_soft()
 	hw_reset_soft();
 	evt_button_mask = 0;
 	evt_button_last = 0;
-	last_send_seq = 0;
 
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked
@@ -829,7 +828,7 @@ void loop()
 		Serial.println(".");
 
 		sendbuf.hdr.pkttype = 'L';
-		sendbuf.hdr.seqnum = last_send_seq = 0;
+		sendbuf.hdr.seqnum = ++last_send_seq;
 		memcpy(&sendbuf.hdr.dst, &base_addr, 8);
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_login);
