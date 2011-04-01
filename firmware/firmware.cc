@@ -811,7 +811,6 @@ void reset_soft()
 	hw_reset_soft();
 	evt_button_mask = 0;
 	evt_button_last = 0;
-	last_send_seq = 0;
 
 	randomSeed(random(0xffff) ^ millis());
 	randomSeed(random(0xffff) ^ (my_addr[1] << 8 | my_addr[0]));
@@ -866,7 +865,7 @@ void loop()
 		Serial.println(".");
 
 		sendbuf.hdr.pkttype = 'L';
-		sendbuf.hdr.seqnum = last_send_seq = 0;
+		sendbuf.hdr.seqnum = ++last_send_seq;
 		memcpy(&sendbuf.hdr.dst, &base_addr, 8);
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_login);
