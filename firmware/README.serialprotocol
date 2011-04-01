@@ -36,10 +36,10 @@ air (e.g. for controlling the base station's LEDs / keys).
 The commands are (the convention with letters is that the capital command is
 sent first and the minuscle is sent as a response):
 
-* 'L': Login; sent by a device on power-on if an address is encoded in EEPROM
-  or if an iButton is detected (in that case, the iButton's MAC address is used
-  as the new device address); the only argument is a boolean indicating the
-  presence of an iButton.
+* 'L': Login; sent by a device on power-on until it is acked. Command specific
+  argument is a 8 byte hex encoded iButton address, if one is connected,
+  otherwise it is filled with nulls. It is also sent after a reset, which
+  happens if an event times out or if it receives an 'X' kill package.
 
 * 'l': Acknowledgement for 'L' (no arguments)
 
