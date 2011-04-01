@@ -102,10 +102,12 @@ Direct control
 
 Commands directly affecting the connected device.
 
-* 'M' <which> <address>: Set the MAC address specified in which (one byte hex;
-  1: own address, 2: base station) to the address (eight byte hex). If which is
-  0, the currently configured MAC addresses are printed in comments. TBD:
-  setting to RAM or EEPROM.
+* 'M00': List all currently configured addresses.
+  'M01' <address>: Set the device mac address to the specified one
+  'M02' <address>: Set the base station mac address to the specified one
+  'M03': Store the currently configured device mac address to the EEPROM
+  'M04': Store the currently configured base station mac address to the EEPROM
+  'M05': Set the device mac adress to the base station mac address
 
 The rest is not yet implemented: 'enable / disable base station mode' (in which
 the device will outsource retransmission to the host, while still ack'ing

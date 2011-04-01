@@ -130,7 +130,8 @@ void hw_setup()
 
 void hw_reset_soft()
 {
-	for(int i=0; i<4; ++i) led(i, 0);
+	for (int i=0; i<4; ++i)
+		led(i, 0);
 	buzzer(0);
 	rgb(0, 0, 0);
 }

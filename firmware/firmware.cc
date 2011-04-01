@@ -3,6 +3,7 @@
 // arduino-cc -P /dev/ttyUSB0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp
 
 #include <WProgram.h>
+#include <avr/eeprom.h>
 
 #include "RF12.h"
 #include "OneWire.h"
@@ -12,13 +13,14 @@
 bool basestation;
 uint8_t my_addr[8];
 uint8_t base_addr[8];
-uint16_t last_send_seq = 0;
+uint16_t last_send_seq;
 
 uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
 struct pktbuffer_s recvbuf;
 
-bool do_soft_reset = true;
+bool do_soft_reset;
+bool pending_login;
 
 void net_proc();
 bool net_poll();
@@ -43,8 +45,8 @@ void ser_printpkt(struct pktbuffer_s *pkt);
 
 void ser_poll();
 
-uint8_t evt_button_mask = 0; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
-uint8_t evt_button_last = 0; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
+uint8_t evt_button_mask; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
+uint8_t evt_button_last; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
 
 /************************************************************
  *                          Network                         *
@@ -474,13 +476,29 @@ void ser_poll()
 			if (ser_goteol)
 				break;
 
-			Serial.print("* 1: my mac   = ");
-			ser_printmac(my_addr);
-			Serial.println();
-			
-			Serial.print("* 2: base mac = ");
-			ser_printmac(base_addr);
-			Serial.println();
+			{
+				uint8_t buf[8];
+
+				Serial.print("* 1: my mac          = ");
+				ser_printmac(my_addr);
+				Serial.println();
+				
+				Serial.print("* 2: base mac        = ");
+				ser_printmac(base_addr);
+				Serial.println();
+
+				for (int i=0; i<8; i++)
+					buf[i] = eeprom_read_byte((uint8_t*)i);
+				Serial.print("* 3: eeprom my mac   = ");
+				ser_printmac(buf);
+				Serial.println();
+
+				for (int i=0; i<8; i++)
+					buf[i] = eeprom_read_byte((uint8_t*)(8+i));
+				Serial.print("* 4: eeprom base mac = ");
+				ser_printmac(buf);
+				Serial.println();
+			}
 			break;
 			
 		case 1:
@@ -489,6 +507,20 @@ void ser_poll()
 			
 		case 2:
 			ser_readmac(base_addr);
+			break;
+
+		case 3:
+			for (int i=0; i<8; i++)
+				eeprom_write_byte((uint8_t*)i, my_addr[i]);
+			break;
+
+		case 4:
+			for (int i=0; i<8; i++)
+				eeprom_write_byte((uint8_t*)(8+i), base_addr[i]);
+			break;
+
+		case 5:
+			memcpy(my_addr, base_addr, 8);
 			break;
 
 		default:
@@ -647,13 +679,12 @@ void evt_poll()
 	uint8_t button_event = 0;
 
 	for (int i=0; i<4; ++i)
-		current_buttons |= (button(i) << (2*i));
+		current_buttons |= button(i) << i;
 
 	button_event |= current_buttons & ~evt_button_last; // newly pressed = down
-	button_event |= (~current_buttons & evt_button_last)<<1; // newly pressed = up
+	button_event |= (~current_buttons & evt_button_last) << 4; // newly pressed = up
 
 	button_event &= evt_button_mask;
-
 	evt_button_last = current_buttons;
 
 	if (!button_event)
@@ -676,11 +707,35 @@ void evt_poll()
  *                         Main Loop                        *
  ************************************************************/
 
+bool poll_ibutton()
+{
+	byte ds_addr[8];
+	ds.reset_search();
+	if (ds.search(ds_addr) == 1)
+	{
+		buzzer(440);
+		Serial.print("* OneWire Addr: ");
+		ser_printmac(ds_addr);
+		Serial.println("");
+		memcpy(my_addr, ds_addr, 8);
+		do_soft_reset = true;
+		return true;
+	}
+	return false;
+}
+
 /* called from the main loop when contact with the base station is lost */
 void reset_soft()
 {
+	Serial.println("* Performing soft reset.");
+
 	do_soft_reset = false;
+	pending_login = true;
+
 	hw_reset_soft();
+	evt_button_mask = 0;
+	evt_button_last = 0;
+	last_send_seq = 0;
 
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked
@@ -689,23 +744,35 @@ void reset_soft()
 
 void setup()
 {
+	for (int i=0; i<8; i++)
+		my_addr[i] = eeprom_read_byte((uint8_t*)i);
+	for (int i=0; i<8; i++)
+		base_addr[i] = eeprom_read_byte((uint8_t*)(8+i));
+
 	hw_setup();
+	reset_soft();
 }
 
 void loop()
 {
+	if (poll_ibutton())
+		return;
+
 	if (do_soft_reset)
 		reset_soft();
 
-	if (net_poll())
-		net_proc();
+	if (pending_login)
+	{
+	}
+	else
+	{
+		if (net_poll())
+			net_proc();
+		evt_poll();
+		// run_vm(); - TBD
+		// check iButton - TBD
+	}
 
 	ser_poll();
-
-	// run_vm(); - TBD
-
-	evt_poll();
-
-	// check iButton - TBD
 }
 
