@@ -404,14 +404,8 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		}
 		Serial.write(' ');
 		
-		for (int i=0; i<8; i++) {
-			if ((pkt->pkt_status.eventmask_setbits & (1 << i)) == 0)
-				Serial.write('z');
-			else if ((pkt->pkt_status.eventmask_val & (1 << i)) == 0)
-				Serial.write('y');
-			else
-				Serial.write('n');
-		}
+		ser_printhex(pkt->pkt_status.eventmask_setbits);
+		ser_printhex(pkt->pkt_status.eventmask_val);
 		break;
 
 	case 's':
@@ -567,15 +561,8 @@ void ser_poll()
 				}
 			}
 
-			sendbuf.pkt_status.eventmask_val = 0xff;
-			sendbuf.pkt_status.eventmask_setbits = 0xff;
-			for (int i = 0; i < 8; i++) {
-				int v = ser_readtri();
-				if (v == 0)
-					sendbuf.pkt_status.eventmask_val &= ~(1 << i);
-				if (v == -1)
-					sendbuf.pkt_status.eventmask_setbits &= ~(1 << i);
-			}
+			sendbuf.pkt_status.eventmask_setbits = ser_readhex();
+			sendbuf.pkt_status.eventmask_val = ser_readhex();
 			break;
 		case 's':
 			sendbuf_len += sizeof(sendbuf.pkt_status_ack);
