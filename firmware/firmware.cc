@@ -21,6 +21,7 @@ struct pktbuffer_s recvbuf;
 
 bool do_soft_reset;
 bool pending_login;
+bool got_ibutton;
 
 void net_proc();
 bool net_poll();
@@ -692,7 +693,7 @@ void evt_poll()
 
 	sendbuf.hdr.pkttype = 'E';
 	sendbuf.hdr.seqnum = ++last_send_seq;
-	memcpy(&sendbuf.hdr.dst, &basestation, 8);
+	memcpy(&sendbuf.hdr.dst, &base_addr, 8);
 	memcpy(&sendbuf.hdr.src, &my_addr, 8);
 	sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_event);
 
@@ -719,6 +720,7 @@ bool poll_ibutton()
 		Serial.println("");
 		memcpy(my_addr, ds_addr, 8);
 		do_soft_reset = true;
+		got_ibutton = true;
 		return true;
 	}
 	return false;
@@ -744,6 +746,8 @@ void reset_soft()
 
 void setup()
 {
+	got_ibutton = false;
+
 	for (int i=0; i<8; i++)
 		my_addr[i] = eeprom_read_byte((uint8_t*)i);
 	for (int i=0; i<8; i++)
@@ -755,6 +759,8 @@ void setup()
 
 void loop()
 {
+	ser_poll();
+
 	if (poll_ibutton())
 		return;
 
@@ -763,6 +769,29 @@ void loop()
 
 	if (pending_login)
 	{
+		if (!memcmp(my_addr, base_addr, 8)) {
+			Serial.println("* Running as basestation.");
+			pending_login = false;
+			basestation = true;
+			return;
+		}
+
+		Serial.print("* Logging in as ");
+		ser_printmac(my_addr);
+		Serial.print(" on base station ");
+		ser_printmac(base_addr);
+		Serial.println(".");
+
+		sendbuf.hdr.pkttype = 'L';
+		sendbuf.hdr.seqnum = last_send_seq = 0;
+		memcpy(&sendbuf.hdr.dst, &base_addr, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_login);
+
+		sendbuf.pkt_login.using_ibutton = got_ibutton;
+		net_send_until_acked('l');
+		pending_login = false;
+		return;
 	}
 	else
 	{
@@ -772,7 +801,5 @@ void loop()
 		// run_vm(); - TBD
 		// check iButton - TBD
 	}
-
-	ser_poll();
 }
 
