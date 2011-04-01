@@ -31,6 +31,7 @@ bool net_send_until_acked(uint8_t ack_type);
 int16_t net_resend_delays[NET_RESEND_DELAYS] = {20, 100, 300, 800, 1500}; // resend interval in ms from the first attempt to send; chosen arbitrarily
 
 uint8_t ser_readbyte();
+void ser_endecho();
 void ser_readeol();
 uint8_t ser_readhex();
 uint16_t ser_readhex16();
@@ -236,13 +237,18 @@ uint8_t ser_readbyte()
 	return c;
 }
 
+void ser_endecho()
+{
+	if (ser_echo)
+		Serial.println(ser_goteol ? "" : "...");
+	ser_echo = false;
+}
+
 void ser_readeol()
 {
 	while (!ser_goteol)
 		ser_readbyte();
-	if (ser_echo)
-		Serial.println("");
-	ser_echo = false;
+	ser_endecho();
 }
 
 uint8_t ser_readhex()
@@ -485,6 +491,7 @@ void ser_poll()
 			if (ser_goteol)
 				break;
 
+			ser_endecho();
 			{
 				uint8_t buf[8];
 
@@ -655,6 +662,7 @@ void ser_poll()
 		}
 
 		/* send the pkt */
+		ser_endecho();
 		net_send();
 
 		break;
