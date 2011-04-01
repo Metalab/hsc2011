@@ -64,7 +64,8 @@ void net_proc()
 			for(uint8_t i = 0; i < 4; ++i)
 				if(recvbuf.pkt_status.set_leds & (1<<i))
 					led(i, recvbuf.pkt_status.leds_val & (1<<i));
-			// TBD eventmask
+			evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
+			evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
 			sendbuf.hdr.pkttype = 's';
 			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
@@ -79,7 +80,7 @@ void net_proc()
 			sendbuf.pkt_status_ack.rgb[0] = getrgb(0);
 			sendbuf.pkt_status_ack.rgb[1] = getrgb(1);
 			sendbuf.pkt_status_ack.rgb[2] = getrgb(2);
-			// TBD eventmask
+			sendbuf.pkt_status_ack.eventmask = evt_button_mask;
 
 			// send just once -- if the ack gets lost, the host
 			// will send another 'S', and it has to be idempotent
