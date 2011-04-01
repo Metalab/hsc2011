@@ -134,7 +134,6 @@ bool net_poll()
 	if (!rf12_recvDone() || rf12_crc != 0)
 		return false;
 
-	Serial.print("Got raw pkt: ");
 	for (int i=0; i<HEADER_MAGIC_LENGTH; i++)
 		Serial.write(rf12_data[i]);
 	Serial.println("");
