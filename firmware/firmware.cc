@@ -212,6 +212,7 @@ bool net_send_until_acked(uint8_t ack_type)
  *                        Serial I/O                        *
  ************************************************************/
 
+bool ser_echo;
 bool ser_goteol;
 uint8_t ser_unget_char;
 
@@ -230,6 +231,8 @@ uint8_t ser_readbyte()
 		ser_goteol = true;
 		return '\n';
 	}
+	if (ser_echo)
+		Serial.write(c);
 	return c;
 }
 
@@ -237,6 +240,9 @@ void ser_readeol()
 {
 	while (!ser_goteol)
 		ser_readbyte();
+	if (ser_echo)
+		Serial.println("");
+	ser_echo = false;
 }
 
 uint8_t ser_readhex()
@@ -462,9 +468,13 @@ void ser_poll()
 	if (!Serial.available())
 		return;
 
+	Serial.print('-');
+	ser_echo = true;
+
 	ser_goteol = false;
 	ser_unget_char = 0;
 	char cmd = ser_readbyte();
+
 
 	switch (cmd)
 	{
@@ -666,6 +676,8 @@ parser_error:
 		ser_readeol();
 		Serial.println("* Parser error in input!");
 	}
+
+	ser_readeol();
 }
 
 /************************************************************
@@ -753,6 +765,9 @@ void setup()
 
 	hw_setup();
 	reset_soft();
+
+	Serial.println("");
+	Serial.println("=== 3.14159265358979323846264338327950288419716939937510 ===");
 }
 
 void loop()
