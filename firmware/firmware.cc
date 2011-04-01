@@ -175,12 +175,13 @@ void net_send()
  * */
 bool net_send_until_acked(uint8_t ack_type)
 {
-	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions. also: random offset TBD
 	uint16_t delta_t;
+	uint32_t first_send;
 	uint8_t resend_number = 0;
 
 	net_send();
-
+	first_send = millis();
+	
 	while (1)
 	{
 		if (net_poll()) {
@@ -201,6 +202,7 @@ bool net_send_until_acked(uint8_t ack_type)
 				return false;
 			} else {
 				net_send();
+				first_send = millis();
 			}
 		}
 		if (poll_ibutton())
