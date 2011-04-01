@@ -17,14 +17,20 @@
 //   - each station incrases the sequence number for each initiation pkt
 //     it sends (uppercase pkt types). the responses are sent with the same
 //     sequence number as the request triggering the resonse. in case of
-//     resends it is possible that a packet is processed twice. the
-//     application must be able to deal with such events.
+//     resends from the base station to the device it is possible that a packet
+//     is processed twice. the application must be able to deal with such
+//     events. (in other words, every command the base station sends must be
+//     idempotent until the ack is received and the next command is sent --
+//     this mainly affects VM operation).
 //
 //   - the login may be sent to 0:0:0:0:0:0:0:0 in which case the first
 //     basestation that acks the pkt is further used as basestation for
 //     this session.
 //
 // For details about the meanings of the fields, see README.serialprotocol
+
+#define HEADER_MAGIC "ML-EDUBUZ"
+#define HEADER_MAGIC_LENGTH 8
 
 enum pkttype_e
 {
@@ -50,14 +56,13 @@ enum pkttype_e
 
 enum event_e
 {
-	ET_BUTTON_PRESS = 'p',
-	ET_BUTTON_RELEASE = 'r',
+	ET_BUTTON = 'b',
 	ET_USER = 'u'
 };
 
 struct pktbuffer_hdr_s
 {
-	uint8_t magic[8];
+	uint8_t magic[HEADER_MAGIC_LENGTH];
 
 	uint8_t pkttype;
 	uint8_t seqnum;
@@ -81,7 +86,7 @@ struct pktbuffer_s
 
 		struct {
 			uint8_t event_type;
-			uint16_t event_payload; // num of button or user value
+			uint16_t event_payload; // for buttons, bits are just as in the event mask in the lower byte
 		} pkt_event;
 
 		struct {

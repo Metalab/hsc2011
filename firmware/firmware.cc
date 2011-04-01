@@ -18,9 +18,14 @@ uint8_t sendbuf_len;
 struct pktbuffer_s sendbuf;
 struct pktbuffer_s recvbuf;
 
+bool do_soft_reset = true;
+
 void net_proc();
-void net_poll();
+bool net_poll();
 void net_send();
+bool net_send_until_acked(uint8_t ack_type);
+#define NET_RESEND_DELAYS 5
+int16_t net_resend_delays[NET_RESEND_DELAYS] = {20, 100, 300, 800, 1500}; // resend interval in ms from the first attempt to send; chosen arbitrarily
 
 uint8_t ser_readbyte();
 void ser_readeol();
@@ -37,6 +42,9 @@ void ser_printmac(uint8_t *buf);
 void ser_printpkt(struct pktbuffer_s *pkt);
 
 void ser_poll();
+
+uint8_t evt_button_mask = 0; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
+uint8_t evt_button_last = 0; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
 
 /************************************************************
  *                          Network                         *
@@ -56,7 +64,8 @@ void net_proc()
 			for(uint8_t i = 0; i < 4; ++i)
 				if(recvbuf.pkt_status.set_leds & (1<<i))
 					led(i, recvbuf.pkt_status.leds_val & (1<<i));
-			// TBD eventmask
+			evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
+			evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
 			sendbuf.hdr.pkttype = 's';
 			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
@@ -71,29 +80,41 @@ void net_proc()
 			sendbuf.pkt_status_ack.rgb[0] = getrgb(0);
 			sendbuf.pkt_status_ack.rgb[1] = getrgb(1);
 			sendbuf.pkt_status_ack.rgb[2] = getrgb(2);
-			// TBD eventmask
+			sendbuf.pkt_status_ack.eventmask = evt_button_mask;
 
 			// send just once -- if the ack gets lost, the host
-			// will send another 'S' with the same sequence number,
-			// net_poll() will recognize the lost ack and just
-			// net_send() again
+			// will send another 'S', and it has to be idempotent
+			// anyway.
+			net_send();
+			break;
+		case 'L':
+		case 'E':
+			// immediately ack -- no processing further than
+			// reporting to serial is required
+			sendbuf.hdr.pkttype = recvbuf.hdr.pkttype == 'E' ? 'e' : 'l';
+			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+			memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+			memcpy(&sendbuf.hdr.src, &my_addr, 8);
+			sendbuf_len = sizeof(struct pktbuffer_hdr_s);
+
+			// send only once -- client will re-transmit the same
+			// event, we'll ack it then, and it's up to the
+			// software side to know that it was a retransmit.
 			net_send();
 			break;
 		case 's':
-		case 'L':
-		case 'E':
 		case 'w':
 		case 'r':
 			// does not need special processing - those events
 			// typically affect the base station which just needs
-			// the serial output
-
-			// TBD: if(i_am_basestation) send_ack();
+			// the serial output; they need no acking as they are
+			// acks themselves.
 			break;
 		case 'e':
 		case 'l':
 			// should never be needed -- this is sent from base to
 			// device and is already blocked on in net_send.
+			Serial.println("* Received ack that was expected to be already processed.");
 			break;
 		case 'W':
 		case 'R':
@@ -103,30 +124,29 @@ void net_proc()
 	}
 }
 
-void net_poll()
+bool net_poll()
 {
 	// a new pkt to process?
 	if (!rf12_recvDone() || rf12_crc != 0)
-		return;
+		return false;
 
 	Serial.print("Got raw pkt: ");
-	for (int i=0; i<8; i++)
+	for (int i=0; i<HEADER_MAGIC_LENGTH; i++)
 		Serial.write(rf12_data[i]);
 	Serial.println("");
 
 	// does it have the right magic?
-	if (memcmp((void*)rf12_data, "ML-EDBUZ", 8))
-		return;
+	if (memcmp((void*)rf12_data, HEADER_MAGIC, HEADER_MAGIC_LENGTH))
+		return false;
 
 	// is it for us?
 	if (memcmp(&my_addr, ((struct pktbuffer_s*)rf12_data)->hdr.dst, 8))
-		return;
+		return false;
 
 	// copy to recv buffer
 	memcpy(&recvbuf, (void*)rf12_data, rf12_len);
 
-	// procces
-	net_proc();
+	return true;
 }
 
 void net_send()
@@ -136,15 +156,52 @@ void net_send()
 		rf12_recvDone();
 
 	/* write magic */
-	memcpy(sendbuf.hdr.magic, "ML-EDBUZ", 8);
+	memcpy(sendbuf.hdr.magic, HEADER_MAGIC, HEADER_MAGIC_LENGTH);
 
 	// copy to RFM12 lib and transmit
 	rf12_sendStart(0, &sendbuf, sendbuf_len);
 
 	Serial.print("* just sent: ");
 	ser_printpkt(&sendbuf);
+}
 
-	// wait for ack if needed and resend - TBD
+/* like net_send, but will try again and again until an ack of ack_type is
+ * received. drops all other packages. if a timeout is reached, it returns
+ * false and sets a flag to do a soft reset when the main loop is next run.
+ *
+ * this can block for an extended period of time and runs a mini-mainloop
+ * inside.
+ * */
+bool net_send_until_acked(uint8_t ack_type)
+{
+	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions.
+	uint16_t delta_t;
+	uint8_t resend_number;
+
+	net_send();
+
+	while(1) {
+		if(net_poll()) {
+			// a 'net_proc light' as it only waits for a very
+			// particular package
+			if(recvbuf.hdr.pkttype == ack_type && recvbuf.hdr.seqnum == last_send_seq)
+			{
+				Serial.println("* Acknowledgement received, continuing.");
+				return true;
+			}
+		}
+		delta_t = (uint16_t)(millis() - first_send);
+		if(delta_t > net_resend_delays[resend_number]) {
+			++resend_number;
+			if(resend_number == NET_RESEND_DELAYS) {
+				Serial.println("* Giving up resending, starting soft-reset.");
+				do_soft_reset = true;
+				return false;
+			} else {
+				net_send();
+			}
+		}
+	}
 }
 
 
@@ -257,8 +314,7 @@ int ser_readeventtype()
 			default:
 				ser_goteol = true;
 				/* fall through */
-			case ET_BUTTON_PRESS:
-			case ET_BUTTON_RELEASE:
+			case ET_BUTTON:
 			case ET_USER:
 				return ch;
 			case ' ':
@@ -349,14 +405,8 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		}
 		Serial.write(' ');
 		
-		for (int i=0; i<8; i++) {
-			if ((pkt->pkt_status.eventmask_setbits & (1 << i)) == 0)
-				Serial.write('z');
-			else if ((pkt->pkt_status.eventmask_val & (1 << i)) == 0)
-				Serial.write('y');
-			else
-				Serial.write('n');
-		}
+		ser_printhex(pkt->pkt_status.eventmask_setbits);
+		ser_printhex(pkt->pkt_status.eventmask_val);
 		break;
 
 	case 's':
@@ -512,15 +562,8 @@ void ser_poll()
 				}
 			}
 
-			sendbuf.pkt_status.eventmask_val = 0xff;
-			sendbuf.pkt_status.eventmask_setbits = 0xff;
-			for (int i = 0; i < 8; i++) {
-				int v = ser_readtri();
-				if (v == 0)
-					sendbuf.pkt_status.eventmask_val &= ~(1 << i);
-				if (v == -1)
-					sendbuf.pkt_status.eventmask_setbits &= ~(1 << i);
-			}
+			sendbuf.pkt_status.eventmask_setbits = ser_readhex();
+			sendbuf.pkt_status.eventmask_val = ser_readhex();
 			break;
 		case 's':
 			sendbuf_len += sizeof(sendbuf.pkt_status_ack);
@@ -591,10 +634,53 @@ parser_error:
 	}
 }
 
+/************************************************************
+ *                      Event handling                      *
+ ************************************************************/
+
+void evt_poll() {
+	uint8_t current_buttons = 0; // format as in evt_button_last
+	uint8_t button_event = 0;
+
+	for(int i=0; i<4; ++i)
+		current_buttons |= (button(i) << (2*i));
+
+	button_event |= current_buttons & ~evt_button_last; // newly pressed = down
+	button_event |= (~current_buttons & evt_button_last)<<1; // newly pressed = up
+
+	button_event &= evt_button_mask;
+
+	evt_button_last = current_buttons;
+
+	if(!button_event)
+		return;
+
+	sendbuf.hdr.pkttype = 'E';
+	sendbuf.hdr.seqnum = ++last_send_seq;
+	memcpy(&sendbuf.hdr.dst, &basestation, 8);
+	memcpy(&sendbuf.hdr.src, &my_addr, 8);
+	sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_event);
+
+	sendbuf.pkt_event.event_type = ET_BUTTON;
+	sendbuf.pkt_event.event_payload = button_event;
+
+	net_send_until_acked('e');
+}
+
 
 /************************************************************
  *                         Main Loop                        *
  ************************************************************/
+
+/* called from the main loop when contact with the base station is lost */
+void reset_soft() {
+	do_soft_reset = false;
+	hw_reset_soft();
+
+	/* TBD: send LOGIN if eeprom mac is found -- use modified form or
+	 * modify net_send_until_acked so serial communication stays possible
+	 * */
+}
 
 void setup()
 {
@@ -603,7 +689,9 @@ void setup()
 
 void loop()
 {
-	net_poll();
+	if(do_soft_reset) reset_soft();
+
+	if(net_poll()) net_proc();
 	ser_poll();
 
 	// run_vm();
@@ -611,5 +699,7 @@ void loop()
 	// check buttons - TBD
 
 	// read serial cmd
+
+	evt_poll();
 }
 

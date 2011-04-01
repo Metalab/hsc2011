@@ -44,16 +44,17 @@ sent first and the minuscle is sent as a response):
 * 'l': Acknowledgement for 'L' (no arguments)
 
 * 'E': Event sent by the device, arguments are `<type> <payload>`, where type
-  is 'p' for button press, 'r' for button release or 'u' for user event (sent
-  by the VM), and payload are two byte hex encoding the pin number or some
-  other data.
+  is 'b' for button press events or 'u' for user event (sent by the VM), and
+  payload are two byte hex. With button events, the payload's lower byte's
+  structure is the same as for the 'S' command's mask part (lowest bit being
+  "button 0 down").
 
 * 'e': Acknowledgement for 'e' (no arguments)
 
 * 'S': Set the state of the device. Command specific arguments are
 
     <vm start> <vm stop> <set ip> [<ip>] <set rgb> [<r> <g> <b>] <set buzzer>
-    [<buzzer>] <led0>..<led3> <mask button0 down> <mask button0 up>..<mask
+    [<buzzer>] <led0>..<led3> <eventmaskmask> <eventmask>
     button3 down> <mask button0 up>
 
   The arguments are:
@@ -69,9 +70,10 @@ sent first and the minuscle is sent as a response):
         (2 byte hex encoding Hz), or turn the buzzer off it is 00 00.
       * led0 to 3: four tri-states to turn the respective LEDs on, off, or keep
         them as they are
-      * mask button0 to 4 up or down: tri-states that define whether or not up
-	or down movement of the respective button should be reported as an
-        event packet or not.
+      * eventmask: hex byte whose lowest bit represents whether a "button 0
+        down" should be sent, the next "button 0 up" until the highest bit
+	"button 3 up". Only those bits also present in eventmaskmask are
+        actually set, the rest is kept as it is.
 
 * 's': Acknowledgement for 's', returns current state of the device. Custom
   arguments are:
