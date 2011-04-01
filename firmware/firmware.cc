@@ -135,10 +135,6 @@ bool net_poll()
 	if (!rf12_recvDone() || rf12_crc != 0)
 		return false;
 
-	for (int i=0; i<HEADER_MAGIC_LENGTH; i++)
-		Serial.write(rf12_data[i]);
-	Serial.println("");
-
 	// does it have the right magic?
 	if (memcmp((void*)rf12_data, HEADER_MAGIC, HEADER_MAGIC_LENGTH))
 		return false;
