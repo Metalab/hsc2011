@@ -54,73 +54,74 @@ void net_proc()
 {
 	ser_printpkt(&recvbuf);
 
-	switch(recvbuf.hdr.pkttype) {
-		case 'S':
-			// TBD: vm state handling (start, stop, ip)
-			if(recvbuf.pkt_status.set_rgb)
-				rgb(recvbuf.pkt_status.rgb_val[0], recvbuf.pkt_status.rgb_val[1], recvbuf.pkt_status.rgb_val[2]);
-			if(recvbuf.pkt_status.set_buzzer)
-				buzzer(recvbuf.pkt_status.buzzer_val);
-			for(uint8_t i = 0; i < 4; ++i)
-				if(recvbuf.pkt_status.set_leds & (1<<i))
-					led(i, recvbuf.pkt_status.leds_val & (1<<i));
-			evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
-			evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
+	switch (recvbuf.hdr.pkttype)
+	{
+	case 'S':
+		// TBD: vm state handling (start, stop, ip)
+		if (recvbuf.pkt_status.set_rgb)
+			rgb(recvbuf.pkt_status.rgb_val[0], recvbuf.pkt_status.rgb_val[1], recvbuf.pkt_status.rgb_val[2]);
+		if (recvbuf.pkt_status.set_buzzer)
+			buzzer(recvbuf.pkt_status.buzzer_val);
+		for (uint8_t i = 0; i < 4; ++i)
+			if (recvbuf.pkt_status.set_leds & (1<<i))
+				led(i, recvbuf.pkt_status.leds_val & (1<<i));
+		evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
+		evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
-			sendbuf.hdr.pkttype = 's';
-			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-			memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-			memcpy(&sendbuf.hdr.src, &my_addr, 8);
-			sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
+		sendbuf.hdr.pkttype = 's';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
-			// TBD: vm state handling (start, stop, ip)
-			sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
-			sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
-			sendbuf.pkt_status_ack.buzzer = getbuzzer();
-			sendbuf.pkt_status_ack.rgb[0] = getrgb(0);
-			sendbuf.pkt_status_ack.rgb[1] = getrgb(1);
-			sendbuf.pkt_status_ack.rgb[2] = getrgb(2);
-			sendbuf.pkt_status_ack.eventmask = evt_button_mask;
+		// TBD: vm state handling (start, stop, ip)
+		sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
+		sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
+		sendbuf.pkt_status_ack.buzzer = getbuzzer();
+		sendbuf.pkt_status_ack.rgb[0] = getrgb(0);
+		sendbuf.pkt_status_ack.rgb[1] = getrgb(1);
+		sendbuf.pkt_status_ack.rgb[2] = getrgb(2);
+		sendbuf.pkt_status_ack.eventmask = evt_button_mask;
 
-			// send just once -- if the ack gets lost, the host
-			// will send another 'S', and it has to be idempotent
-			// anyway.
-			net_send();
-			break;
-		case 'L':
-		case 'E':
-			// immediately ack -- no processing further than
-			// reporting to serial is required
-			sendbuf.hdr.pkttype = recvbuf.hdr.pkttype == 'E' ? 'e' : 'l';
-			sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-			memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-			memcpy(&sendbuf.hdr.src, &my_addr, 8);
-			sendbuf_len = sizeof(struct pktbuffer_hdr_s);
+		// send just once -- if the ack gets lost, the host
+		// will send another 'S', and it has to be idempotent
+		// anyway.
+		net_send();
+		break;
+	case 'L':
+	case 'E':
+		// immediately ack -- no processing further than
+		// reporting to serial is required
+		sendbuf.hdr.pkttype = recvbuf.hdr.pkttype == 'E' ? 'e' : 'l';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
 
-			// send only once -- client will re-transmit the same
-			// event, we'll ack it then, and it's up to the
-			// software side to know that it was a retransmit.
-			net_send();
-			break;
-		case 's':
-		case 'w':
-		case 'r':
-			// does not need special processing - those events
-			// typically affect the base station which just needs
-			// the serial output; they need no acking as they are
-			// acks themselves.
-			break;
-		case 'e':
-		case 'l':
-			// should never be needed -- this is sent from base to
-			// device and is already blocked on in net_send.
-			Serial.println("* Received ack that was expected to be already processed.");
-			break;
-		case 'W':
-		case 'R':
-			/* TBD, fall through */
-		default:
-			Serial.println("* Received unknown command, not processed.");
+		// send only once -- client will re-transmit the same
+		// event, we'll ack it then, and it's up to the
+		// software side to know that it was a retransmit.
+		net_send();
+		break;
+	case 's':
+	case 'w':
+	case 'r':
+		// does not need special processing - those events
+		// typically affect the base station which just needs
+		// the serial output; they need no acking as they are
+		// acks themselves.
+		break;
+	case 'e':
+	case 'l':
+		// should never be needed -- this is sent from base to
+		// device and is already blocked on in net_send.
+		Serial.println("* Received ack that was expected to be already processed.");
+		break;
+	case 'W':
+	case 'R':
+		/* TBD, fall through */
+	default:
+		Serial.println("* Received unknown command, not processed.");
 	}
 }
 
@@ -176,24 +177,25 @@ bool net_send_until_acked(uint8_t ack_type)
 {
 	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions. also: random offset TBD
 	uint16_t delta_t;
-	uint8_t resend_number;
+	uint8_t resend_number = 0;
 
 	net_send();
 
-	while(1) {
-		if(net_poll()) {
+	while (1)
+	{
+		if (net_poll()) {
 			// a 'net_proc light' as it only waits for a very
 			// particular package
-			if(recvbuf.hdr.pkttype == ack_type && recvbuf.hdr.seqnum == last_send_seq)
+			if (recvbuf.hdr.pkttype == ack_type && recvbuf.hdr.seqnum == last_send_seq)
 			{
 				Serial.println("* Acknowledgement received, continuing.");
 				return true;
 			}
 		}
 		delta_t = (uint16_t)(millis() - first_send);
-		if(delta_t > net_resend_delays[resend_number]) {
+		if (delta_t > net_resend_delays[resend_number]) {
 			++resend_number;
-			if(resend_number == NET_RESEND_DELAYS) {
+			if (resend_number == NET_RESEND_DELAYS) {
 				Serial.println("* Giving up resending, starting soft-reset.");
 				do_soft_reset = true;
 				return false;
@@ -310,16 +312,17 @@ int ser_readeventtype()
 {
 	while (1) {
 		char ch = ser_readbyte();
-		switch(ch) {
-			default:
-				ser_goteol = true;
-				/* fall through */
-			case ET_BUTTON:
-			case ET_USER:
-				return ch;
-			case ' ':
-			case '\t':
-				continue;
+		switch(ch)
+		{
+		default:
+			ser_goteol = true;
+			/* fall through */
+		case ET_BUTTON:
+		case ET_USER:
+			return ch;
+		case ' ':
+		case '\t':
+			continue;
 		}
 	}
 }
@@ -638,11 +641,12 @@ parser_error:
  *                      Event handling                      *
  ************************************************************/
 
-void evt_poll() {
+void evt_poll()
+{
 	uint8_t current_buttons = 0; // format as in evt_button_last
 	uint8_t button_event = 0;
 
-	for(int i=0; i<4; ++i)
+	for (int i=0; i<4; ++i)
 		current_buttons |= (button(i) << (2*i));
 
 	button_event |= current_buttons & ~evt_button_last; // newly pressed = down
@@ -652,7 +656,7 @@ void evt_poll() {
 
 	evt_button_last = current_buttons;
 
-	if(!button_event)
+	if (!button_event)
 		return;
 
 	sendbuf.hdr.pkttype = 'E';
@@ -673,7 +677,8 @@ void evt_poll() {
  ************************************************************/
 
 /* called from the main loop when contact with the base station is lost */
-void reset_soft() {
+void reset_soft()
+{
 	do_soft_reset = false;
 	hw_reset_soft();
 
@@ -689,9 +694,11 @@ void setup()
 
 void loop()
 {
-	if(do_soft_reset) reset_soft();
+	if (do_soft_reset)
+		reset_soft();
 
-	if(net_poll()) net_proc();
+	if (net_poll())
+		net_proc();
 
 	ser_poll();
 
