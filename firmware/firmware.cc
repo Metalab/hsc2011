@@ -15,6 +15,7 @@ int16_t net_resend_delays[] = { 20, 80, 200, 300, 400, 500, 500 };
 #define NET_PING_TIMEOUT 30000
 
 bool basestation;
+uint8_t ib_addr[8];
 uint8_t my_addr[8];
 uint8_t base_addr[8];
 uint16_t last_send_seq;
@@ -394,7 +395,7 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 	switch (pkt->hdr.pkttype)
 	{
 	case 'L':
-		Serial.write(pkt->pkt_login.using_ibutton ? 'y' : 'n');
+		ser_printmac(pkt->pkt_login.ibutton);
 		break;
 
 	case 'l':
@@ -619,7 +620,7 @@ void ser_poll()
 		{
 		case 'L':
 			sendbuf_len += sizeof(sendbuf.pkt_login);
-			sendbuf.pkt_login.using_ibutton = ser_readbool();
+			memcpy(sendbuf.pkt_login.ibutton, ib_addr, 8);
 			break;
 		case 'l':
 			break;
@@ -792,7 +793,7 @@ bool poll_ibutton()
 		Serial.print("* OneWire Addr: ");
 		ser_printmac(ds_addr);
 		Serial.println("");
-		memcpy(my_addr, ds_addr, 8);
+		memcpy(ib_addr, ds_addr, 8);
 		do_soft_reset = true;
 		got_ibutton = true;
 		return true;
@@ -869,8 +870,8 @@ void loop()
 		memcpy(&sendbuf.hdr.dst, &base_addr, 8);
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_login);
+		memcpy(sendbuf.pkt_login.ibutton, ib_addr, 8);
 
-		sendbuf.pkt_login.using_ibutton = got_ibutton;
 		net_send_until_acked('l');
 		pending_login = false;
 		return;

@@ -81,7 +81,7 @@ struct pktbuffer_s
 
 	union {
 		struct {
-			int using_ibutton : 1;
+			uint8_t ibutton[8];
 		} pkt_login;
 
 		struct {
