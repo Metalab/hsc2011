@@ -45,6 +45,7 @@ void ser_printmac(uint8_t *buf);
 void ser_printpkt(struct pktbuffer_s *pkt);
 
 void ser_poll();
+bool poll_ibutton();
 
 uint8_t evt_button_mask; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
 uint8_t evt_button_last; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
@@ -205,6 +206,8 @@ bool net_send_until_acked(uint8_t ack_type)
 				net_send();
 			}
 		}
+		if (poll_ibutton())
+			return false;
 	}
 }
 

@@ -29,7 +29,7 @@
 //
 // For details about the meanings of the fields, see README.serialprotocol
 
-#define HEADER_MAGIC "ML-EDUBUZ"
+#define HEADER_MAGIC "ML-EDBUZ"
 #define HEADER_MAGIC_LENGTH 8
 
 enum pkttype_e
