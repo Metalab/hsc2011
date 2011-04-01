@@ -174,7 +174,7 @@ void net_send()
  * */
 bool net_send_until_acked(uint8_t ack_type)
 {
-	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions.
+	uint32_t first_send = millis(); // not checked for wrapping as we don't expect the devices to submit something exactly 50 days after the device is powered up. this should be fixed -- there were already rockets that misfired due to such bad assuptions. also: random offset TBD
 	uint16_t delta_t;
 	uint8_t resend_number;
 
@@ -677,9 +677,9 @@ void reset_soft() {
 	do_soft_reset = false;
 	hw_reset_soft();
 
-	/* TBD: send LOGIN if eeprom mac is found -- use modified form or
-	 * modify net_send_until_acked so serial communication stays possible
-	 * */
+	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
+	 * from an iButton -- use modified form or modify net_send_until_acked
+	 * so serial communication stays possible */
 }
 
 void setup()
@@ -692,14 +692,13 @@ void loop()
 	if(do_soft_reset) reset_soft();
 
 	if(net_poll()) net_proc();
+
 	ser_poll();
 
-	// run_vm();
-
-	// check buttons - TBD
-
-	// read serial cmd
+	// run_vm(); - TBD
 
 	evt_poll();
+
+	// check iButton - TBD
 }
 
