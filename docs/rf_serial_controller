@@ -1,0 +1,62 @@
+This illustrates typical communication between a base station and a buzzer, and
+how the base station and the controller (PC side) see it.
+
+Both devices start powerless
+
+
+           BUZZER "A"         rf comm.              BASE              serial comm.          CONTROLLER            web socket?          APPLICATION
+
+           (power on)
+                          ----- L ----->
+            (waits)
+                          ----- L ----->
+            (waits)                              (power on)   -- (platform dep.) -->
+                                                                                        (detect new serial)
+                                                                <----- M05 -----
+                                                (now in base
+                                                station mode)
+                          ----- L ----->         (pass on)       ----- L ----->         (added to list of
+            (waits)                                                                     candidate devices)    --- new cand. "A" --->
+                                                                                                                                        (thinks)
+                          ----- L ----->                         ----- L ----->         (drop, waiting for
+            (waits)                                                                     decisiion by app)
+                                                                                                             <--- accept cand. "A" ---
+                          ----- L ----->                         ----- L ----->
+                                                                                         (found in list)
+                         <----- l -----                         <----- l -----
+
+
+                                                                                                                                       (gets user interaction,
+                                                                                                                                       wants leds active and
+                                                                                                                                       event mask configured)
+                    (package loss) X---                         <----- S -----          (add to send queue)     <----- S -----
+
+                         <----- S -----                         <----- S -----        (resend timeout reached)
+  (leds on, set ev-mask)
+                          ----- s ----->                         ----- s ----->         (remove from queue)      ----- s ----->       (don't care, maybe display readiness)
+
+
+
+     (button pressed)     ----- E -X (lost)
+   (busy waiting for ack)
+     (retransmit timeout) ----- E ----->
+                         <----- e -----      (auto-acking)       ----- E ----->                                   ----- E ----->       (registered)
+
+
+
+      (gets out of range)
+
+
+                         (lost) X-----                           <----- S -----             (add to queue)       <----- S -----         (game over, leds off)
+                         (lost) X-----                           <----- S -----                (resend)
+                         (lost) X-----                           <----- S -----                (resend)
+                                                                                          (resent too often)    --- device "A" lost -->   (complain or whatever)
+
+     (gets back into range)
+
+       (regular ping)     ----- E ----->
+                         <----- e -----      (auto-acking)       ----- E ----->           (i don't know him)
+                         <----- X -----                         <----- X -----           (add reset to queue)
+         (reset)          ----- x ----->                         ----- x ----->       (remove reset from queue)   
+
+
