@@ -1,6 +1,6 @@
 
 // Using http://svn.clifford.at/tools/trunk/arduino-cc.sh:
-// arduino-cc -P /dev/ttyUSB0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp
+// arduino-cc -P /dev/ttyUSB0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp embedvm.c
 
 #include <WProgram.h>
 #include <avr/eeprom.h>
@@ -9,6 +9,7 @@
 #include "OneWire.h"
 #include "pktspec.h"
 #include "hardware.h"
+#include "embedvm.h"
 
 // resend interval in ms from the first attempt to send; chosen arbitrarily
 int16_t net_resend_delays[] = { 20, 80, 200, 300, 400, 500, 500 };
@@ -52,8 +53,15 @@ void ser_printpkt(struct pktbuffer_s *pkt);
 void ser_poll();
 bool poll_ibutton();
 
+void vm_reset();
+
 uint8_t evt_button_mask; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
 uint8_t evt_button_last; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
+
+bool vm_running;
+bool vm_stop_next;
+struct embedvm_s vm = { };
+uint8_t vm_mem[256] = { };
 
 /************************************************************
  *                          Network                         *
@@ -66,7 +74,25 @@ void net_proc()
 	switch (recvbuf.hdr.pkttype)
 	{
 	case 'S':
-		// TBD: vm state handling (start, stop, ip)
+		if (recvbuf.pkt_status.vm_stop)
+			vm_running = false;
+		if (recvbuf.pkt_status.vm_start)
+			vm_running = true;
+		if (recvbuf.pkt_status.vm_start && recvbuf.pkt_status.vm_stop)
+			vm_stop_next = true;
+		if (recvbuf.pkt_status.set_ip)
+		{
+			// this overwrites options previously set from
+			// vm_start/stop. this is desired -- starting and
+			// setting ip at the same time would cause the VM
+			// to run twice if acks are lost.
+			//
+			// not using interrupt here as no "return" is
+			// meaningful.
+			vm_reset();
+			vm.ip = recvbuf.pkt_status.ip_val;
+		}
+
 		if (recvbuf.pkt_status.set_rgb)
 			rgb(recvbuf.pkt_status.rgb_val[0], recvbuf.pkt_status.rgb_val[1], recvbuf.pkt_status.rgb_val[2]);
 		if (recvbuf.pkt_status.set_buzzer)
@@ -83,7 +109,8 @@ void net_proc()
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
-		// TBD: vm state handling (start, stop, ip)
+		sendbuf.pkt_status_ack.vm_running = vm_running;
+		sendbuf.pkt_status_ack.ip = vm.ip;
 		sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
 		sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
 		sendbuf.pkt_status_ack.buzzer = getbuzzer();
@@ -741,6 +768,42 @@ parser_error:
 }
 
 /************************************************************
+ *                             VM                           *
+ ************************************************************/
+
+void vm_reset(void)
+{
+	vm_running = false;
+	vm_stop_next = false;
+	vm.sp = vm.sfp = sizeof(vm_mem);
+}
+
+int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx)
+{
+	if (addr + (is16bit ? 1 : 0) >= sizeof(vm_mem))
+		return 0;
+	if (is16bit)
+		return (vm_mem[addr] << 8) | vm_mem[addr+1];
+	return vm_mem[addr];
+}
+
+void vm_mem_write(uint16_t addr, int16_t value, bool is16bit, void *ctx)
+{
+	if (addr + (is16bit ? 1 : 0) >= sizeof(vm_mem))
+		return;
+	if (is16bit) {
+		vm_mem[addr] = value >> 8;
+		vm_mem[addr+1] = value;
+	} else
+		vm_mem[addr] = value;
+}
+
+int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx)
+{
+	return 0;
+}
+
+/************************************************************
  *                      Event handling                      *
  ************************************************************/
 
@@ -819,6 +882,8 @@ void reset_soft()
 	randomSeed(random(0xffff) ^ (my_addr[5] << 8 | my_addr[4]));
 	randomSeed(random(0xffff) ^ (my_addr[7] << 8 | my_addr[6]));
 
+	vm_reset();
+
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked
 	 * so serial communication stays possible */
@@ -832,6 +897,10 @@ void setup()
 		my_addr[i] = eeprom_read_byte((uint8_t*)i);
 	for (int i=0; i<8; i++)
 		base_addr[i] = eeprom_read_byte((uint8_t*)(8+i));
+
+	vm.mem_read = &vm_mem_read;
+	vm.mem_write = &vm_mem_write;
+	vm.call_user = &vm_call_user;
 
 	hw_setup();
 	reset_soft();
@@ -893,8 +962,15 @@ void loop()
 		if (net_poll())
 			net_proc();
 		evt_poll();
-		// run_vm(); - TBD
 		// check iButton - TBD
+	}
+
+	if (vm_running) {
+		embedvm_exec(&vm);
+		if (vm_stop_next == true) {
+			vm_running = false;
+			vm_stop_next = false;
+		}
 	}
 }
 
