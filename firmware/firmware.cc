@@ -56,7 +56,7 @@ bool poll_ibutton();
 void vm_reset();
 
 uint8_t evt_button_mask; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
-uint8_t evt_button_last; // bit number (2*i) is true if button i was last held down; this format is chosen to match the eventmask
+uint8_t evt_button_last; // bit number i is true if button i was last held down
 
 bool vm_running;
 bool vm_stop_next;

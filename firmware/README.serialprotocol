@@ -55,7 +55,6 @@ sent first and the minuscle is sent as a response):
 
     <vm start> <vm stop> <set ip> [<ip>] <set rgb> [<r> <g> <b>] <set buzzer>
     [<buzzer>] <led0>..<led3> <eventmaskmask> <eventmask>
-    button3 down> <mask button0 up>
 
   The arguments are:
 
@@ -71,9 +70,10 @@ sent first and the minuscle is sent as a response):
       * led0 to 3: four tri-states to turn the respective LEDs on, off, or keep
         them as they are
       * eventmask: hex byte whose lowest bit represents whether a "button 0
-        down" should be sent, the next "button 0 up" until the highest bit
-	"button 3 up". Only those bits also present in eventmaskmask are
-        actually set, the rest is kept as it is.
+	down" should be sent, the next "button 1 down", "button 2 down" and
+	"button 3 down", then "button 0 up" until "button 3 up". Only those
+	bits also present in eventmaskmask are actually set, the rest is kept
+        as it is.
 
 * 's': Acknowledgement for 's', returns current state of the device. Custom
   arguments are:
@@ -90,9 +90,7 @@ sent first and the minuscle is sent as a response):
     * ip: current value of the instruction pointer (2 byte hex)
     * buzzer: current vaue of the buzzer in Hz (2 byte hex) of 0 for off
     * r, g, b: hex bytes for red/green/blue part of RGB LED
-    * eventmask: one byte hex whose bits represent which events ("button 0
-      down" (bit 0), "button 0 up" (bit 1), etc. to "button 3 up" (bit 7)) will
-      actually trigger 'E' events
+    * eventmask: as in 'S'
 
 * 'W', 'R', 'w', 'r': write data to VM scratchpad RAM or program code and
   appropriate acknowledgements (TBD)
