@@ -1,6 +1,6 @@
 
 // Using http://svn.clifford.at/tools/trunk/arduino-cc.sh:
-// arduino-cc -P /dev/ttyUSB0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp embedvm.c
+// arduino-cc -P /dev/ttyACM0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp embedvm.c
 
 #include <WProgram.h>
 #include <avr/eeprom.h>
