@@ -9,8 +9,8 @@ sent, and the device will send a line for every packet it receives.
 Every line starts with a letter indicating the type of command being described
 in the line. 
 
-Arguments are either boolean / tristate ('y' for yes and 'n' for no, 'z' for
-don't change) or hex encoded; individual commands might implement other
+Arguments are either boolean / tristate (``y`` for yes and ``n`` for no, ``z``
+for don't change) or hex encoded; individual commands might implement other
 argument formats as well.
 
 The commands are grouped in three categories:
@@ -19,117 +19,116 @@ RF package commands
 -------------------
 
 This is the typical case of commands and maps directly to an RF package as
-defined in pktspec.h. The general structure is
+defined in pktspec.h. The general structure is::
 
-    <command letter> <seqnum> <source address> <destination address>
-    <command specific arguments>
+    <command letter> <seqnum> <source address> <destination address> <command
+    specific arguments>
 
 where seqnum is a 1 byte hex sequence number, source and destination address
-are 8 byte hex values. Both addresses can, as a short cut, be '*' to indicate
-the device's own address as defined in EEPROM or by the iButton connected or
-'$' to indicate the currently configured base station.
+are 8 byte hex values. Both addresses can, as a short cut, be ``*`` to indicate
+the device's own current address or ``$`` to indicate the currently configured
+base station.
 
-Commands sent to '*' (or explicitly to the connected device's MAC address) are
-not put on the air but instead processed as if they were just received over the
-air (e.g. for controlling the base station's LEDs / keys).
+Commands sent to ``*`` (or explicitly to the connected device's MAC address)
+are not put on the air but instead processed as if they were just received over
+the air (e.g. for controlling the base station's LEDs / keys).
 
 The commands are (the convention with letters is that the capital command is
 sent first and the minuscle is sent as a response):
 
-* 'L': Login; sent by a device on power-on until it is acked. Command specific
-  argument is a 8 byte hex encoded iButton address, if one is connected,
-  otherwise it is filled with nulls. It is also sent after a reset, which
-  happens if an event times out or if it receives an 'X' kill package.
+* ``L``: Login; sent by a device on power-on until it is acked. Command
+  specific argument is a 8 byte hex encoded iButton address, if one is
+  connected, otherwise it is filled with nulls. It is also sent after a reset,
+  which happens if an event times out or if it receives an 'X' kill package.
 
-* 'l': Acknowledgement for 'L' (no arguments)
+* ``l``: Acknowledgement for ``L`` (no arguments)
 
-* 'E': Event sent by the device, arguments are `<type> <payload>`, where type
-  is 'b' for button press events or 'u' for user event (sent by the VM), and
-  payload are two byte hex. With button events, the payload's lower byte's
-  structure is the same as for the 'S' command's mask part (lowest bit being
-  "button 0 down").
+* ``E``: Event sent by the device, arguments are ``<type> <payload>``, where
+  type is ``b`` for button press events or ``u`` for user event (sent by the
+  VM), and payload are two byte hex. With button events, the payload's lower
+  byte's structure is the same as for the ``S`` command's mask part (lowest bit
+  meaning "button 0 down").
 
-* 'e': Acknowledgement for 'e' (no arguments)
+* ``e``: Acknowledgement for ``e`` (no arguments)
 
-* 'S': Set the state of the device. Command specific arguments are
+* ``S``: Set the state of the device. Command specific arguments are::
 
     <vm start> <vm stop> <set ip> [<ip>] <set rgb> [<r> <g> <b>] <set buzzer>
     [<buzzer>] <led0>..<led3> <eventmaskmask> <eventmask>
 
   The arguments are:
 
-      * vm start: boolean. start the virtual machine
-      * vm stop: boolean. stop the virtual machine (if both are set, the VM
-        will execute exactly one iteration)
-      * set ip: boolean. if true, set the instruction pointer to the value ip
-        (2 byte hex)
-      * set rgb: boolean. if true, set the RGB LED to the three hex byte values
-        in r/g/b
-      * set buzzer: boolean. if true, set the buzzer to the frequency in buzzer
-        (2 byte hex encoding Hz), or turn the buzzer off it is 00 00.
-      * led0 to 3: four tri-states to turn the respective LEDs on, off, or keep
-        them as they are
-      * eventmask: hex byte whose lowest bit represents whether a "button 0
-	down" should be sent, the next "button 1 down", "button 2 down" and
-	"button 3 down", then "button 0 up" until "button 3 up". Only those
-	bits also present in eventmaskmask are actually set, the rest is kept
-        as it is.
+  * ``vm start``: boolean. start the virtual machine
+  * ``vm stop``: boolean. stop the virtual machine (if both are set, the VM
+    will execute exactly one iteration)
+  * ``set ip``: boolean. if true, stop and reset the VM and set the instruction
+    pointer to the value ``ip`` (2 byte hex)
+  * ``set rgb``: boolean. if true, set the RGB LED to the three hex byte values
+    in ``r``/``g``/``b``
+  * ``set buzzer``: boolean. if true, set the buzzer to the frequency in
+    ``buzzer`` (2 byte hex encoding Hz), or turn the buzzer off it is ``00 00``.
+  * ``led0`` to ``3``: four tri-states to turn the respective LEDs on, off, or
+    keep them as they are
+  * ``eventmask``: hex byte whose lowest bit represents whether a "button 0
+    down" should be sent, the next "button 1 down", "button 2 down" and "button
+    3 down", then "button 0 up" until "button 3 up". Only those bits also
+    present in ``eventmaskmask`` are actually set, the rest is kept as it is.
 
-* 's': Acknowledgement for 's', returns current state of the device. Custom
-  arguments are:
+* ``s``: Acknowledgement for ``s``, returns current state of the device. Custom
+  arguments are::
 
     <vm running> <led0>..<led3> <button0>..<button3> <ip> <buzzer> <r> <g> <b>
     <eventmask>
 
   The arguments are:
 
-    * vm running: boolean; true if VM is running
-    * led0 to 3: four booleans indicating which LEDs are on
-    * button0 to 3: four booleans indicating which buttons are pressed
-      (independent of the event mask)
-    * ip: current value of the instruction pointer (2 byte hex)
-    * buzzer: current vaue of the buzzer in Hz (2 byte hex) of 0 for off
-    * r, g, b: hex bytes for red/green/blue part of RGB LED
-    * eventmask: as in 'S'
+  * ``vm running``: boolean; true if VM is running
+  * ``led0`` to ``3``: four booleans indicating which LEDs are on
+  * ``button0`` to ``3``: four booleans indicating which buttons are pressed
+    (independent of the event mask)
+  * ``ip``: current value of the instruction pointer (2 byte hex)
+  * ``buzzer``: current vaue of the buzzer in Hz (2 byte hex) or 0 for off
+  * ``r``, ``g``, ``b``: hex bytes for red/green/blue part of RGB LED
+  * ``eventmask``: as in ``S``
 
-* 'W', 'R', 'w', 'r': write data to VM scratchpad RAM or program code and
-  appropriate acknowledgements (TBD)
+* ``W``, ``R``, ``w``, ``r``: write data to VM scratchpad RAM or program code
+  and appropriate acknowledgements (TBD)
 
 Direct control
 --------------
 
 Commands directly affecting the connected device.
 
-* 'M00': List all currently configured addresses.
-  'M01' <address>: Set the device mac address to the specified one
-  'M02' <address>: Set the base station mac address to the specified one
-  'M03': Store the currently configured device mac address to the EEPROM
-  'M04': Store the currently configured base station mac address to the EEPROM
-  'M05': Set the device mac adress to the base station mac address
+* ``M00``: List all currently configured addresses.
+* ``M01 <address>``: Set the device mac address to the specified one
+* ``M02 <address>``: Set the base station mac address to the specified one
+* ``M03``: Store the currently configured device mac address to the EEPROM
+* ``M04``: Store the currently configured base station mac address to the
+  EEPROM
+* ``M05``: Set the device mac adress to the base station mac address (aka
+  "enable base station mode"
 
-The rest is not yet implemented: 'enable / disable base station mode' (in which
-the device will outsource retransmission to the host, while still ack'ing
-incoming packages to keep round-trips short) and promiscuous mode.
+A command to set promiscuous mode is yet to be implemented.
 
 Comments
 --------
 
-Empty lines and lines starting with '*' are ignored by the device. The device
+Empty lines and lines starting with ``*`` are ignored by the device. The device
 may generate such lines for debugging reasons; for example, if the host sends a
-command unknown to the device, it will response with a '*' followed by an error
-message.
+command unknown to the device, it will response with a ``*`` followed by an
+error message.
 
 Terminal Echo
 -------------
 
-Commands are echoed back to the PC. The echoes are prefixed with a '-' character.
-Terminal echo can be turned on by sending a '-' character and turned off using the
-'+' character. The terminal echo is enabled per default.
+Commands are echoed back to the PC. The echoes are prefixed with a ``-`` character.
+Terminal echo can be turned on by sending a ``-`` character and turned off
+using the ``+`` character. The terminal echo is enabled per default.
 
 Sync Sequence
 -------------
 
-A line sent to the device that is prefixed with '=' is echoed back with "=== "
+A line sent to the device that is prefixed with ``=`` is echoed back with "=== "
 before and " ===" after it. This may be used to syncronize the serial communication.
 A synchronization line showing Pi to 50 decimal digits is sent by the device upon
 power up.
