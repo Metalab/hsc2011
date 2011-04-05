@@ -55,6 +55,8 @@ void ser_poll();
 bool poll_ibutton();
 
 void vm_reset();
+void vm_step(bool allow_send);
+int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx);
 
 uint8_t evt_button_mask; // [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
 uint8_t evt_button_last; // bit number i is true if button i was last held down
@@ -263,6 +265,8 @@ bool net_send_until_acked(uint8_t ack_type)
 		}
 		if (poll_ibutton())
 			return false;
+
+		vm_step(false);
 	}
 }
 
@@ -794,6 +798,18 @@ void vm_reset(void)
 	vm_running = true;
 }
 
+void vm_step(bool allow_send)
+{
+	if (!vm_running) return;
+	if (!allow_send && vm_mem_read(vm.ip, false, 0) == 0xb5) return; /* TBD: there might be a better / generalized way to do this */
+
+	embedvm_exec(&vm);
+	if (vm_stop_next == true) {
+		vm_running = false;
+		vm_stop_next = false;
+	}
+}
+
 int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx)
 {
 	if (addr < sizeof(vm_mem))
@@ -806,9 +822,9 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx)
 	}
 	if (addr + is16bit ? 1 : 0 < sizeof(vm_mem) + sizeof(vm_rom)) {
 		if (is16bit)
-			return pgm_read_word(&(vm_rom[addr]));
+			return pgm_read_word(&(vm_rom[addr-sizeof(vm_mem)]));
 		else
-			return pgm_read_byte(&(vm_rom[addr]));
+			return pgm_read_byte(&(vm_rom[addr-sizeof(vm_mem)]));
 	}
 	return 0;
 }
@@ -833,7 +849,7 @@ int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx)
 	case 1: // get leds / set leds / set leds masked
 		if (argc >= 1) {
 			for (int i=0; i<4; ++i)
-				if (argc == 1 || argv[1] & (1<<i)) led(i, argv[1] & (1<<i));
+				if (argc == 1 || argv[1] & (1<<i)) led(i, argv[0] & (1<<i));
 		}
 		return (getled(3)<<3) | (getled(2)<<2) | (getled(1)<<1) | getled(0);
 	case 2: // get rgb / set rgb
@@ -1021,14 +1037,8 @@ void loop()
 			net_proc();
 		evt_poll();
 		// check iButton - TBD
-	}
 
-	if (vm_running) {
-		embedvm_exec(&vm);
-		if (vm_stop_next == true) {
-			vm_running = false;
-			vm_stop_next = false;
-		}
+		vm_step(true);
 	}
 }
 
