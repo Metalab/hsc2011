@@ -37,14 +37,10 @@ boolean getled(byte n)
 	digitalRead(ledPins[n]);
 }
 
-void rgb(byte r, byte g, byte b)
+void rgb(byte n, byte val)
 {
-	analogWrite(rgbPins[0], r);
-	analogWrite(rgbPins[1], g);
-	analogWrite(rgbPins[2], b);
-	current_rgb[0] = r;
-	current_rgb[1] = g;
-	current_rgb[2] = b;
+	analogWrite(rgbPins[n], val);
+	current_rgb[n] = val;
 }
 
 byte getrgb(byte n)
@@ -133,5 +129,7 @@ void hw_reset_soft()
 	for (int i=0; i<4; ++i)
 		led(i, 0);
 	buzzer(0);
-	rgb(0, 0, 0);
+	rgb(0, 0);
+	rgb(1, 0);
+	rgb(2, 0);
 }
