@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="org/metalab/igor/servlet/QueryServlet.java|org/metalab/igor/servlet/CsvServlet.java|org/metalab/ygor/servlet/CsvServlet.java" kind="src" path="src"/>
+	<classpathentry kind="lib" path="lib/app.jar"/>
+	<classpathentry kind="lib" path="lib/conn_chk.jar"/>
+	<classpathentry kind="lib" path="lib/gnujsp09.jar"/>
+	<classpathentry kind="lib" path="lib/jsp.jar"/>
+	<classpathentry kind="lib" path="lib/jspengine.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-2-3.jar"/>
+	<classpathentry kind="lib" path="lib/war.jar"/>
+	<classpathentry kind="lib" path="lib/webserver.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.6.0_24 i568"/>
+	<classpathentry kind="lib" path="/home/elchaschab/devel/libs/log4j-1.2.13.jar"/>
+	<classpathentry kind="lib" path="/home/elchaschab/devel/libs/sqlitejdbc-v056.jar"/>
+	<classpathentry kind="lib" path="/home/elchaschab/devel/libs/commons-codec-1.5/commons-codec-1.5.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/home/elchaschab/devel/libs/commons-codec-1.5/commons-codec-1.5-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/home/elchaschab/devel/libs/rxtx-2.1-7-bins-r2/rxtx-2.1-7-bins-r2/RXTXcomm.jar"/>
+	<classpathentry kind="output" path="build"/>
+</classpath>
