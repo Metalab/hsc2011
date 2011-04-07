@@ -109,7 +109,9 @@ void loop()
 			led(2, state & 4);
 			led(3, state & 8);
 
-			rgb(r, g, b);
+			rgb(0, r);
+			rgb(1, g);
+			rgb(2, b);
 			delay(30);
 
 			if (!busy)
@@ -121,7 +123,9 @@ void loop()
 		led(2, LOW);
 		led(3, LOW);
 
-		rgb(0, 0, 0);
+		rgb(0, 0);
+		rgb(1, 0);
+		rgb(2, 0);
 		return;
 	}
 
