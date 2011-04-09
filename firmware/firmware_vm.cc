@@ -193,27 +193,7 @@ void vm_mem_write(uint16_t addr, int16_t value, bool is16bit, void *ctx UNUSED)
 int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx UNUSED)
 {
 	switch (funcid) {
-	case 0:
-		vm_running = false;
-		return 0;
-	case 1: // get leds / set leds / set leds masked
-		if (argc >= 1) {
-			for (int i=0; i<4; ++i)
-				if (argc == 1 || argv[1] & (1<<i)) led(i, argv[0] & (1<<i));
-		}
-		return (getled(3)<<3) | (getled(2)<<2) | (getled(1)<<1) | getled(0);
-	case 2: // get rgb / set rgb
-		if (argc < 1) return 0;
-		if (argv[0] < 0 || argv[0] > 2) return 0;
-		if (argc > 1)
-			rgb(argv[0], argv[1]);
-		return getrgb(argv[0]);
-	case 3: // get buzzer / set buzzer
-		if (argc >= 1) buzzer(argv[0]); // i doubt we get meaningful results if we set the buzzer to more than 32kHz, ignoring signedness
-		return getbuzzer();
-	case 4: // get buttons
-		return (button(3)<<3) | (button(2)<<2) | (button(1)<<1) | button(0);
-	case 5: // user event
+	case 5: // user event -- event id has to match the condition in vm_step concerning allow_send!
 		sendbuf.hdr.pkttype = 'E';
 		sendbuf.hdr.seqnum = ++last_send_seq;
 		memcpy(&sendbuf.hdr.dst, &base_addr, 8);
