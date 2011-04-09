@@ -2,6 +2,8 @@
 #ifndef PKTSPEC_H
 #define PKTSPEC_H
 
+#include <stdint.h>
+
 //
 // Protocol details:
 //
