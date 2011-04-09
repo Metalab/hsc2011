@@ -1,0 +1,2 @@
+/ygor org.metalab.ygor.http.QueryServlet
+/control org.metalab.ygor.http.ControllerServlet
