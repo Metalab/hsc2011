@@ -6,18 +6,19 @@ import java.util.HashMap;
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
 import org.metalab.ygor.YgorException;
+import org.metalab.ygor.db.NamedQuery;
 
 public class ScriptLoader extends Service {
 	private File queryDir;
 	private int intervalSec = 60;
-	private HashMap<String, SQLFile> registeredSQLFiles = new HashMap<String, SQLFile>();
+	private HashMap<String, NamedQuery> registeredSQLFiles = new HashMap<String, NamedQuery>();
 	private ScriptPool pool;
 	
 	public ScriptLoader(YgorConfig config) {
 		super(config);
 	}
 
-	public synchronized void doBoot() throws YgorException {
+	public void doBoot() throws YgorException {
 		YgorConfig config = getYgorConfig();
 
 		try {
@@ -35,14 +36,14 @@ public class ScriptLoader extends Service {
 		pool.start();
 	}
 
-	public synchronized void doHalt() throws YgorException {
+	public void doHalt() throws YgorException {
 		setRunning(false);
 		if(pool != null)
 		  pool.interrupt();
 		pool = null;
 	}
 
-  private synchronized boolean isUpdated(SQLFile sqlf) {
+  private synchronized boolean isUpdated(NamedQuery sqlf) {
     String name = sqlf.f.getName();
     if (!registeredSQLFiles.containsKey(name) || sqlf.modtime > registeredSQLFiles.get(name).modtime)
       return true;
@@ -50,18 +51,22 @@ public class ScriptLoader extends Service {
     return false;
   }
 
-	public synchronized String getNamedQuery(String name) {
-		SQLFile sqlf = registeredSQLFiles.get(name);
+	public synchronized NamedQuery getNamedQuery(String name) {
+		NamedQuery sqlf = registeredSQLFiles.get(name);
 
 		if (sqlf == null)
 			throw new IllegalArgumentException("static query not found: "
 					+ name);
 
 		debug("Fetched named query + " + name);
-		return sqlf.query;
+		return sqlf;
 	}
 
 	private class ScriptPool extends Thread {
+	  public ScriptPool() {
+	    super("script pool");
+	  }
+	  
 		public void run() {
 			try {
 				do {
@@ -73,30 +78,31 @@ public class ScriptLoader extends Service {
 			}
 		}
 
-		public void updatePool() throws IOException {
-			// add updated files
-			SQLFile[] sqlListing = SQLFile.listSqlFiles(queryDir);
+    public void updatePool() throws IOException {
+      synchronized (ScriptLoader.this) {
+        // add updated files
+        NamedQuery[] sqlListing = NamedQuery.listSqlFiles(queryDir);
 
-			if (sqlListing == null)
-				return;
+        if (sqlListing == null)
+          return;
 
-      for (int i = 0; i < sqlListing.length; i++) {
-        if (isUpdated(sqlListing[i])) {
-          info("Load script: " + sqlListing[i].name);
-          registeredSQLFiles.put(sqlListing[i].name, sqlListing[i]);
+        for (int i = 0; i < sqlListing.length; i++) {
+          if (isUpdated(sqlListing[i])) {
+            info("Load script: " + sqlListing[i].name);
+            registeredSQLFiles.put(sqlListing[i].name, sqlListing[i]);
+          }
+        }
+
+        // remove deleted files
+        NamedQuery[] registeredFiles = registeredSQLFiles.values().toArray(new NamedQuery[0]);
+
+        for (int i = 0; i < registeredFiles.length; i++) {
+          if (!registeredFiles[i].f.exists()) {
+            info("Unload script: " + registeredFiles[i].f.getName());
+            registeredSQLFiles.remove(registeredFiles[i].f.getName());
+          }
         }
       }
-
-			// remove deleted files
-			SQLFile[] registeredFiles = registeredSQLFiles.values().toArray(
-					new SQLFile[0]);
-
-			for (int i = 0; i < registeredFiles.length; i++) {
-				if (!registeredFiles[i].f.exists()) {
-					info("Unload script: " + registeredFiles[i].f.getName());
-					registeredSQLFiles.remove(registeredFiles[i].f.getName());
-				}
-			}
-		}
+    }
 	}
 }

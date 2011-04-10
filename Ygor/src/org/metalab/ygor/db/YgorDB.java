@@ -11,13 +11,12 @@ import java.util.HashMap;
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
 import org.metalab.ygor.YgorException;
-import org.metalab.ygor.util.SQLFile;
 import org.metalab.ygor.util.ScriptLoader;
 
 public class YgorDB extends Service {
   private Connection connection;
   private ScriptLoader scriptLoader;
-  private HashMap<String, PreparedStatement> preparedStatements = new HashMap<String, PreparedStatement>();
+  private HashMap<String, NamedQuery> namedQueries = new HashMap<String, NamedQuery>();
 
   public YgorDB(YgorConfig config) {
     super(config);
@@ -61,7 +60,7 @@ public class YgorDB extends Service {
     
     String lastQuery = null;
     try {
-      SQLFile[] sqlListing = SQLFile.listSqlFiles(schemaDir);
+      NamedQuery[] sqlListing = NamedQuery.listSqlFiles(schemaDir);
       
       for (int i = 0; i < sqlListing.length; i++) {
         connection.createStatement().execute(lastQuery = sqlListing[i].query);
@@ -89,40 +88,17 @@ public class YgorDB extends Service {
     }
   }
 
-  public YgorQuery createQuery(String queryString) throws SQLException {
-    if(!getYgorConfig().b(YgorConfig.DEBUG)) {
-      throw new YgorException("Won't execute raw queries unless in debug mode: " + queryString);
-    } else {
-      return new YgorQuery(connection.createStatement(), queryString);
-    }
-  }
-  
   public YgorQuery createPreparedQuery(String queryName)  {
-    return createPreparedQuery(queryName, null);
-  }
-  
-  //FIXME dirty query parameter handling
-  public YgorQuery createPreparedQuery(String queryName, HashMap<String, String> params)  {
     try {
-      PreparedStatement pstmnt = preparedStatements.get(queryName);
-      if (pstmnt == null) {
-        String queryString = scriptLoader.getNamedQuery(queryName);
-        if (queryString != null) {
-          pstmnt = connection.prepareStatement(queryString);
-          preparedStatements.put(queryName, pstmnt);
-        }
+      NamedQuery namedQuery = namedQueries.get(queryName);
+      if (namedQuery == null) {
+          namedQueries.put(queryName, namedQuery = scriptLoader.getNamedQuery(queryName));
       }
 
-      if(pstmnt == null)
+      if(namedQuery == null)
         throw new YgorException("Unknown query: " + queryName);
       else {
-        if (params != null) {
-          String seqParam;
-          for (int i = 0; (seqParam = params.get(String.valueOf(i))) != null; i++) {
-            pstmnt.setString(i + 1, seqParam);
-          }
-        }
-        return new YgorQuery(pstmnt);
+        return new YgorQuery(connection, namedQuery);
       }
     } catch (SQLException e) {
       throw new YgorException("create prepared query failed", e);

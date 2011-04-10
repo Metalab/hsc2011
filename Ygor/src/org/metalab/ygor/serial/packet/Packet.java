@@ -1,7 +1,9 @@
 package org.metalab.ygor.serial.packet;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import org.metalab.ygor.YgorException;
 
@@ -48,10 +50,6 @@ public class Packet {
 	  }
 	};
 	
-	public Packet(PacketType p_type, ResultSet rs) throws SQLException {
-	  this(p_type, rs.getShort(1), rs.getString(2), rs.getString(3), rs.getString(4));
-	}
-	
 	public Packet(PacketType p_type, short seqnum, String src, String dest, String payloadHex) {
 		this.p_type = p_type;
 		this.seqnum = seqnum;
@@ -66,6 +64,10 @@ public class Packet {
     else
       throw new IllegalArgumentException("Invalid destination address: " + dest);
     
+    setPayload(payloadHex);
+	}
+	
+	public void setPayload(String payloadHex) {
     if(payloadHex == null) {
       this.payloadHex = "";
       this.payload = null;
@@ -75,7 +77,6 @@ public class Packet {
       this.payload = parsePayload(payloadHex);
     }
 	}
-
   public String toString() {
     // len = ptype(1) + seqnum(2) + src(16) + dest(16) + payloadLen(?) + newline(1)
     int len = 35 + payloadHex.length() + 1;
@@ -94,7 +95,7 @@ public class Packet {
   private Object parsePayload(String payload) {
     switch (p_type) {
     case PKTT_LOGIN:
-      return new Address(payload);
+      return new IButton(payload);
       
     case PKTT_EVENT:
       return new Event(payload);
@@ -128,5 +129,39 @@ public class Packet {
 	    payload = tokens[4];
 	  
 	  return new Packet(p_type, seqnum, src, dest, payload);
+	}
+	
+  public HashMap<String, Object> createParameterMap() {
+    HashMap<String, Object> paramMap = new HashMap<String, Object>();
+    paramMap.put("src", this.src);
+    paramMap.put("dest", this.dest);
+    paramMap.put("seqnum", this.seqnum);
+    paramMap.put("date", now());
+
+    if(this.payload instanceof IButton)
+      paramMap.put("ibutton", ((IButton) this.payload).hex);
+    else if(this.payload instanceof Event) {
+      Event e = (Event) this.payload;
+      paramMap.put("reserved", e.reserved);
+      paramMap.put("eventmask", e.eventmask);
+    }
+
+    return paramMap;
+  }
+  
+
+  private static Date now() {
+    return new Date(System.currentTimeMillis());
+  }
+  
+	public Packet createResponse(PacketType p_type, Payload payload) {
+	  String payloadString = null;
+	  if(payload != null)
+	    payloadString = payload.toString();
+	  return new Packet(p_type, seqnum, src, dest, payloadString);
+	}
+	
+	public static Packet createFromResultSet(PacketType p_type, ResultSet rs) throws SQLException {
+	    return new Packet(p_type, rs.getShort("seqnum"), rs.getString("src"), rs.getString("dest"), null);
 	}
 }

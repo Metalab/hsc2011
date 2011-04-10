@@ -12,7 +12,7 @@ import org.metalab.ygor.http.YgorWeb;
 public class YgorRequest {
 	private String name;
 	private HttpServletRequest request;
-	private HashMap<String, String> params = new HashMap<String, String>();
+	private HashMap<String, Object> params = new HashMap<String, Object>();
 	private YgorDB db;
 	private YgorWeb web;
 	
@@ -46,18 +46,14 @@ public class YgorRequest {
 	}
 
 	public YgorQuery execute(String caller) throws YgorException {
-	  String name = value("name", true);
-	  String query = value("query", true); 
+	  String name = value("name", true); 
 
 	  try {
-	    if (name != null) {
-        return db.createPreparedQuery(name,params);
-      } else if (query != null) { 
-			  return db.createQuery(query); 
-			} 
+	    if (name != null)
+        return db.createPreparedQuery(name);
 			else
 				throw new YgorException(
-						"Presence of either ygor-name or ygor-query is manadatory");
+						"parameter name is mandatory");
 		} catch (Exception e) {
 			throw new YgorException("Transaction failed", e);
 		} 
@@ -68,11 +64,15 @@ public class YgorRequest {
 	}
 
 	public String value(String key, boolean tolerant) {
-		String param = params.get(key);
+		Object param = params.get(key);
 		if (!tolerant && param == null)
 			throw new IllegalArgumentException("HTTP header not found: "
 					+ param);
-		return param;
+		return param.toString();
+	}
+	
+	public HashMap<String, Object> getParameterMap() {
+	  return (HashMap<String, Object>)params.clone();
 	}
 
 	public boolean test(String headerKey, String pattern) {

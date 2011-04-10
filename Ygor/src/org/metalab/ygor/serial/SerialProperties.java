@@ -105,4 +105,8 @@ public class SerialProperties {
 	public String getDevice() {
 		return device;
 	}
+	
+	public int getParity() {
+	  return parity;
+	}
 }

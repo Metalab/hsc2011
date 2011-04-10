@@ -1,9 +1,10 @@
 CREATE TABLE EVENTS (
-        src TEXT PRIMARY KEY,
+	id INTEGER PRIMARY KEY,
+        src TEXT,
 	dest TEXT,
+	seqnum TEXT,
 	type TEXT,
-	ibutton TEXT,
-	since DATE,
-	accepted BOOL,
-	ack BOOL
+	reserved TEXT,
+	eventmask TEXT,
+	date DATE
 );
