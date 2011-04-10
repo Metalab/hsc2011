@@ -1,9 +1,0 @@
-$extern 0x0000 // VMMEM_QUICKHW_START
-array8u led[4]; // actually it's array1u
-array8u leds[1]; // actually it's it's uint4_t
-array8u rgb[3];
-array8u button[4]; // actually it's array1u
-array8u buttons[1]; // actually it's uint4_t
-global buzzer;
-
-$memaddr 16 // VMMEM_RAM_START
