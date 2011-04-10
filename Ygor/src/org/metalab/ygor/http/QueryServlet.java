@@ -15,7 +15,7 @@ public class QueryServlet extends YgorServlet {
 	protected void process(YgorRequest request, OutputStream out) throws YgorException {
 	  YgorQuery query = request.execute("Query servlet");
 	  try {
-	    query.execute();
+	    query.execute(request);
       query.writeJson(out);
     } catch (SQLException e) {
       throw new YgorException("SQL query failed", e);

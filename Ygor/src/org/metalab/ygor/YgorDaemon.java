@@ -20,20 +20,21 @@ public class YgorDaemon extends Service {
 	public synchronized void doBoot() throws YgorException {
 		YgorConfig config = YgorDaemon.instance.getYgorConfig();
 		
-		Runtime.getRuntime().addShutdownHook(new Thread(){
+		Runtime.getRuntime().addShutdownHook(new Thread("shutdown hook"){
 			public void run() {
 				YgorDaemon.shutdown();
 			}
 		});
 		
+    YgorDaemon.serial = new BaseStation(config);
+    
 		YgorDaemon.db = new YgorDB(config);
 		YgorDaemon.db.boot();
 
 		YgorDaemon.web = new YgorWeb(config);
 		YgorDaemon.web.boot();
 		
-		YgorDaemon.serial = new BaseStation(config);
-		YgorDaemon.serial.boot();
+    YgorDaemon.serial.boot();
 	}
 	
 	public synchronized void doHalt() {

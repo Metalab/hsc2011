@@ -23,10 +23,8 @@ public class YgorConfig extends Properties {
   public final static Parameter HTTP_SERVLET_MAP = new Parameter("http.servlets", TYPES.FILE);
   public final static Parameter HTTP_ALIASES = new Parameter("http.aliases", TYPES.FILE);
   public final static Parameter DEBUG = new Parameter("debug", TYPES.BOOLEAN);
-  public final static Parameter CONSOLE_ENABLE = new Parameter("netconsole.enalbe", TYPES.BOOLEAN);
-  public final static Parameter CONSOLE_PORT = new Parameter("netconsole.port", TYPES.INTEGER);
-  public final static Parameter CONSOLE_HOST = new Parameter("netconsole.host", TYPES.STRING);
   public final static Parameter SERIAL_CONF = new Parameter("serial.conf", TYPES.FILE);
+  public final static Parameter SERIAL_RESEND_INTERVAL = new Parameter("serial.resendInterval", TYPES.LONG);
   
 	public YgorConfig() {
 		set(HTTP_HOST, "localhost");
@@ -39,8 +37,8 @@ public class YgorConfig extends Properties {
 		set(DB_DRIVER, "org.sqlite.JDBC");
 		set(DB_URL, "jdbc:sqlite:ygor.db");
 	  set(DEBUG, false);
-	  set(CONSOLE_HOST, "localhost");
-	  set(CONSOLE_PORT, 8349);
+	  set(SERIAL_CONF, "serial.properties");
+	  set(SERIAL_RESEND_INTERVAL, "50");
 	}
 
 	public YgorConfig(File f) throws IOException {
