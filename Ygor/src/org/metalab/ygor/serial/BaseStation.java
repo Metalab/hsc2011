@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.util.TooManyListenersException;
 
 import org.metalab.ygor.Service;
@@ -46,8 +45,7 @@ public class BaseStation extends Service {
 
       if (commPort instanceof SerialPort) {
         this.serialPort = (SerialPort) commPort;
-
-        this.serialPort.setSerialPortParams(props.getBaud(), SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+        this.serialPort.setSerialPortParams(props.getBaud(), props.getDatabits(), props.getStopbits(), props.getParity());
 
         this.in = new SerialPortInputStream(serialPort);
         this.out = serialPort.getOutputStream();
@@ -83,9 +81,8 @@ public class BaseStation extends Service {
           sb.append((char) d);
 
         String s = sb.toString();
-        
+        debug("RX: " + s);
         if(!s.trim().startsWith("*") && !s.startsWith("-") && !s.startsWith("user")) {
-          debug("RX: " + s);
           return Packet.parsePacket(s);
         }
       } catch (Exception e) {
