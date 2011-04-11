@@ -77,17 +77,16 @@ void net_proc()
 		// anyway.
 		net_send();
 		break;
-	case 'L':
 	case 'E':
 		// immediately ack -- no processing further than
 		// reporting to serial is required
-		sendbuf.hdr.pkttype = recvbuf.hdr.pkttype == 'E' ? 'e' : 'l';
+		sendbuf.hdr.pkttype = 'e';
 		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
 		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
 
-		// send only once -- client will re-transmit the same
+		// send only once -- buzzer will re-transmit the same
 		// event, we'll ack it then, and it's up to the
 		// software side to know that it was a retransmit.
 		net_send();
@@ -95,6 +94,7 @@ void net_proc()
 	case 's':
 	case 'w':
 	case 'r':
+	case 'L':
 		// does not need special processing - those events
 		// typically affect the base station which just needs
 		// the serial output; they need no acking as they are
