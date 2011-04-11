@@ -19,11 +19,7 @@ vm_error_e vm_error;
 bool vm_suspend;
 unsigned long vm_resumetime;
 uint8_t vm_rom[VMMEM_FLASH_SIZE] PROGMEM = {
-	// 0x93, 0x91, 0xb1, // set leds 0 and 1 on, the others off (one argument, value 3)
-	// 0x98, 0xff, 0x90, 0x92, 0xb2, // set red part of rgb led (two arguments, 0 and 255)
-	// 0x91, 0x91, 0xb2, // get blue value of rgb led
-	// 0x91, 0xb5, // send that value as a user event
-	0x90, 0xb0, // stop
+#include "vmcode/flash.progmem"
 };
 
 void vm_reset(void)

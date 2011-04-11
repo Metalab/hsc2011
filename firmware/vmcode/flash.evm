@@ -1,10 +1,15 @@
 $include "memmapped.inc"
 
-array8u states[16] = {0, 1, 3, 2, 6, 4, 12, 8, 8, 12, 4, 6, 2, 3, 1, 0};
+$memaddr 0x0310 // VM_FLASH_START
+array8u states[16] = {0, 1, 3, 2, 6, 4, 12, 8, 8, 12, 4, 6, 2, 3, 1, 0}; // read only!
 
-function kit()
+function kitt()
 {
 	local i;
+
+	// timing happene^Wis tuned to match the base station login timeouts
+	// (an animation goes all the time until the timeout starts the next
+	// one)
 	for(i = 0; i < 16; ++i) {
 		leds = states[i];
 		$uf1(100);

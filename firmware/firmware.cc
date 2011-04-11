@@ -113,6 +113,10 @@ void loop()
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_login);
 		memcpy(sendbuf.pkt_login.ibutton, ib_addr, 8);
 
+
+		embedvm_interrupt(&vm, EMBEDVM_SYM_kitt);
+		vm_running = true;
+
 		net_send_until_acked('l');
 		pending_login = false;
 		return;
