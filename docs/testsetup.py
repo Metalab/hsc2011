@@ -1,8 +1,15 @@
-# Usage example: python testsetup.py /dev/ttyUSB0 01
+"""Tool to configure a connected edubuzzer device to use our testing base
+station ID and a given client ID.
+
+Usage example: python testsetup.py /dev/ttyUSB0 01"""
 
 import sys
 import serial
 import time
+
+if len(sys.argv) != 2 or len(sys.argv[2]) != 2:
+	print >>sys.stderr, __doc__
+	sys.exit(1)
 
 s = serial.Serial(sys.argv[1], 57600, timeout=0.1)
 
@@ -13,10 +20,9 @@ while True:
 	l = s.readline()
 	if not l:
 		continue;
-	l = l.lstrip('\0\r\n')
-	l = l.rstrip('\0\r\n')
-	print "%s"%l
-	if len(l) > 0 and l[0:10] == "=== 3.1415":
+	l = l.strip('\0\r\n')
+	print l
+	if l.startswith("=== 3.1415"):
 		break;
 
 def consume_serinput():
@@ -25,14 +31,14 @@ def consume_serinput():
 		if not l:
 			continue;
 		l = l.rstrip('\0\r\n')
-		print "%s"%l
-		if len(l) > 0 and l[0] == '-':
+		print l
+		if l.startswith('-'):
 			break;
 
 def send_serial(cmd):
-	for i in range(len(cmd)):
-		# print "<%c>"%cmd[i]
-		s.write(cmd[i])
+	for c in cmd:
+		# print "<%s>"%c
+		s.write(c)
 		time.sleep(0.01)
 
 send_serial("M05\n")
