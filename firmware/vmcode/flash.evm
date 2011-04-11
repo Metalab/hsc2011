@@ -1,0 +1,12 @@
+$include "memmapped.inc"
+
+array8u states[16] = {0, 1, 3, 2, 6, 4, 12, 8, 8, 12, 4, 6, 2, 3, 1, 0};
+
+function kit()
+{
+	local i;
+	for(i = 0; i < 16; ++i) {
+		leds = states[i];
+		$uf1(100);
+	}
+}
