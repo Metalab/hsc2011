@@ -202,7 +202,7 @@ int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx UNUS
 		vm_error = VM_E_USER;
 		break;
 	case 1: // sleep for a number of milliseconds
-		vm_resumetime = millis() + argc ? argv[0] : 0;
+		vm_resumetime = millis() + (argc ? argv[0] : 0);
 		vm_suspend = true;
 		break;
 	case 5: // user event -- event id has to match the condition in vm_step concerning allow_send!
