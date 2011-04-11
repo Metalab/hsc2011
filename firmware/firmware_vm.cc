@@ -109,14 +109,14 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 	if (VMMEM_EEPROM_START <= addr && addr + is16bit < VMMEM_EEPROM_END)
 	{
 		if (is16bit)
-			return eeprom_read_word((uint16_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr));
+			return (eeprom_read_byte((uint8_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr))<<8) | eeprom_read_byte((uint8_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr + 1));
 		else
 			return eeprom_read_byte((uint8_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr));
 	}
 	if (VMMEM_FLASH_START <= addr && addr + is16bit < VMMEM_FLASH_END)
 	{
 		if (is16bit)
-			return pgm_read_word(&(vm_rom[addr-VMMEM_FLASH_START]));
+			return (pgm_read_byte(&(vm_rom[addr-VMMEM_FLASH_START]))<<8) | pgm_read_byte(&(vm_rom[addr-VMMEM_FLASH_START+1]));
 		else
 			return pgm_read_byte(&(vm_rom[addr-VMMEM_FLASH_START]));
 	}
