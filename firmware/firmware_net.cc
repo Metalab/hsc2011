@@ -39,11 +39,8 @@ void net_proc()
 			// vm_start/stop. this is desired -- starting and
 			// setting ip at the same time would cause the VM
 			// to run twice if acks are lost.
-			//
-			// not using interrupt here as no "return" is
-			// meaningful.
-			vm_reset();
-			vm.ip = recvbuf.pkt_status.ip_val;
+			vm_running = false;
+			embedvm_interrupt(&vm, recvbuf.pkt_status.ip_val);
 		}
 
 		if (recvbuf.pkt_status.set_rgb) {

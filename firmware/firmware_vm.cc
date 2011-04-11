@@ -16,6 +16,8 @@ struct embedvm_s vm = { };
 uint8_t vm_mem[VMMEM_RAM_SIZE] = { };
 uint16_t vm_stack_size;
 vm_error_e vm_error;
+bool vm_suspend;
+unsigned long vm_resumetime;
 uint8_t vm_rom[VMMEM_FLASH_SIZE] PROGMEM = {
 	// 0x93, 0x91, 0xb1, // set leds 0 and 1 on, the others off (one argument, value 3)
 	// 0x98, 0xff, 0x90, 0x92, 0xb2, // set red part of rgb led (two arguments, 0 and 255)
@@ -31,6 +33,7 @@ void vm_reset(void)
 	vm.sp = vm.sfp = VMMEM_STACK_END;
 	vm_stack_size = VMMEM_RAM_SIZE / 2;
 	vm_error = VM_E_NONE;
+	vm_suspend = false;
 
 	vm.ip = VM_IP_STOP;
 }
@@ -40,6 +43,12 @@ void vm_step(bool allow_send)
 	if (!vm_running) return;
 	if (vm_error != VM_E_NONE) return;
 	if (vm.ip == VM_IP_STOP) return;
+	if (vm_suspend) {
+		if ((int16_t)(vm_resumetime - millis()) > 0)
+			return;
+		else
+			vm_suspend = false;
+	}
 
 	if (!allow_send && vm_mem_read(vm.ip, false, 0) == 0xb5) return; /* TBD: there might be a better / generalized way to do this */
 
@@ -193,6 +202,13 @@ void vm_mem_write(uint16_t addr, int16_t value, bool is16bit, void *ctx UNUSED)
 int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx UNUSED)
 {
 	switch (funcid) {
+	case 0: // set an error state
+		vm_error = VM_E_USER;
+		break;
+	case 1: // sleep for a number of milliseconds
+		vm_resumetime = millis() + argc ? argv[0] : 0;
+		vm_suspend = true;
+		break;
 	case 5: // user event -- event id has to match the condition in vm_step concerning allow_send!
 		sendbuf.hdr.pkttype = 'E';
 		sendbuf.hdr.seqnum = ++last_send_seq;
@@ -204,6 +220,7 @@ int16_t vm_call_user(uint8_t funcid, uint8_t argc, int16_t *argv, void *ctx UNUS
 		sendbuf.pkt_event.event_payload = argc ? argv[0] : 0; // we should consider sending 2 words
 
 		net_send_until_acked('e');
+		break;
 	}
 }
 
