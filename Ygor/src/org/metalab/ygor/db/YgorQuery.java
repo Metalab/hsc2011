@@ -13,6 +13,7 @@ import java.util.HashMap;
 
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.db.NamedQuery.ResultSetType;
+import org.metalab.ygor.util.ParameterMap;
 
 public class YgorQuery {
   private final static char openArray = '[';
@@ -35,15 +36,14 @@ public class YgorQuery {
   }
 
   public void execute() throws YgorException, SQLException {
-    this.execute((HashMap<String, Object>)null);
+    this.execute((ParameterMap)null);
   }
   
-  public void execute(YgorRequest request) throws YgorException, SQLException {
-    this.execute(request.getParameterMap());
-  }
-  
-  public void execute(HashMap<String, Object> parameterMap) throws YgorException, SQLException {
-    namedQuery.execute(connection, parameterMap);
+  public void execute(ParameterMap pm) throws YgorException, SQLException {
+    if(pm != null)
+      namedQuery.execute(connection, pm.getParameterMap());
+    else
+      namedQuery.execute(connection, null);
     
     switch (namedQuery.rs_type) {
     case RESULT_SET:
@@ -69,6 +69,10 @@ public class YgorQuery {
       break;
     }
   }
+  
+  public Object getResult(){
+    return namedQuery.result;
+  }
 
   public boolean isOpen() throws SQLException {
     if(isOpen && namedQuery.rs_type == ResultSetType.RESULT_SET)
@@ -80,18 +84,18 @@ public class YgorQuery {
   private void writeNextRow(PrintStream out) throws SQLException {
     if (namedQuery.rs_type == ResultSetType.RESULT_SET) {
       ResultSet rs = (ResultSet) namedQuery.result;
-
+      
+      out.print(openObj);
       for (int i = 0; i < headerNames.length; i++) {
-        out.print(openObj);
         out.print(tick);
         out.print(headerNames[i]);
         out.print(delimVal);
         out.print(rs.getString(i + 1));
         out.print(tick);
-        out.print(closeObj);
         if(i < headerNames.length - 1)
           out.print(delimObj);
       }
+      out.print(closeObj);
     } else {
       out.print(openObj);
       out.print(tick);
@@ -106,8 +110,10 @@ public class YgorQuery {
 
   public void writeJson(PrintStream out) throws SQLException {
     out.print(openArray);
-    while(isOpen())
+    while(isOpen()) {
       writeNextRow(out);
+      out.print(delimObj);
+    }
     out.print(closeArray);
     
     if(namedQuery.rs_type == ResultSetType.RESULT_SET)

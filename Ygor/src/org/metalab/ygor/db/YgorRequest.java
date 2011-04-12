@@ -8,14 +8,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.http.YgorWeb;
+import org.metalab.ygor.util.ParameterMap;
 
-public class YgorRequest {
+public class YgorRequest implements ParameterMap {
 	private String name;
 	private HttpServletRequest request;
 	private HashMap<String, Object> params = new HashMap<String, Object>();
 	private YgorDB db;
 	private YgorWeb web;
-	
+
 	public YgorRequest(HttpServletRequest request)
 			throws IllegalArgumentException, YgorException {
 		this.request = request;
