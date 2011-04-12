@@ -1,5 +1,4 @@
 create table VMEVENTS (
-	id INTEGER PRIMARY KEY,
 	src TEXT,
 	dest TEXT,
 	seqnum TEXT,
@@ -23,6 +22,6 @@ create table VMEVENTS (
 
 	eventmask TEXT,
 	eventmaskmak TEXT,
-	date DATE,
+	date TIME,
 	ack BOOL
 );
