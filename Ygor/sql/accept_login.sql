@@ -1,2 +1,2 @@
--- src, dest, seqnum
-update LOGINS set accepted="true" where src = ? and dest = ? and seqnum = ? and accepted="false"
+-- rowid
+update LOGINS set accepted="true" where ROWID = ? and accepted="false"

@@ -1,1 +1,1 @@
-select * from LOGINS;
+select ROWID, * from LOGINS;
