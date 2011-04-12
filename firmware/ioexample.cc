@@ -38,6 +38,19 @@ void setup()
 
 void loop()
 {
+	int c = Serial.read();
+	if (c >= 0) {
+		Serial.print("* Got RS232 char: ");
+		Serial.print(c, DEC);
+		if (c > 32 && c < 127) {
+			Serial.print(" '");
+			Serial.write(c);
+			Serial.println("'");
+		} else {
+			Serial.println(" (non printable)");
+		}
+	}
+
 	if ((uint16_t)(millis() - last_pwrcheck_millis) > 1000)
 	{
 		Serial.print("* Power status: ");
