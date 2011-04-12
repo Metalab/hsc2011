@@ -38,10 +38,10 @@ void setup()
 
 void loop()
 {
-	if (millis() - last_pwrcheck_millis > 1000)
+	if ((uint16_t)(millis() - last_pwrcheck_millis) > 1000)
 	{
 		Serial.print("* Power status: ");
-		Serial.println(analogRead(0), DEC);
+		Serial.println(getpwr(), DEC);
 		last_pwrcheck_millis = millis();
 	}
 

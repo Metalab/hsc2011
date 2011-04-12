@@ -89,6 +89,14 @@ uint16_t getbuzzer()
 	return current_buzzer;
 }
 
+uint16_t getpwr()
+{
+	uint16_t v = analogRead(0);
+	pinMode(buttonPins[0], INPUT);
+	digitalWrite(buttonPins[0], HIGH);
+	return v;
+}
+
 void hw_setup()
 {
 	// initialize serial communication
