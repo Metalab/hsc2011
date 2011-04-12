@@ -7,7 +7,7 @@ import sys
 import serial
 import time
 
-if len(sys.argv) != 2 or len(sys.argv[2]) != 2:
+if len(sys.argv) != 3 or len(sys.argv[2]) != 2:
 	print >>sys.stderr, __doc__
 	sys.exit(1)
 
