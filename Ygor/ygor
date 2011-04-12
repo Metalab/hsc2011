@@ -1,0 +1,1 @@
+$1/java -cp etc/ -Djava.library.path=lib/ -jar ygor.jar etc/ygor.properties
