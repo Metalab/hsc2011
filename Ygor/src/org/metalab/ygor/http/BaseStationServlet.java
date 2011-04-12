@@ -20,6 +20,8 @@ public class BaseStationServlet extends YgorServlet {
     try {
       if (cmd == "accept_login") {
         dispatcher.acceptLogin(query).writeJson(out);
+      } else if (cmd == "vm_status") {
+        dispatcher.queueVMStatus(query).writeJson(out);
       } else {
         YgorDaemon.baseStation().transmit(cmd);
       }
@@ -27,4 +29,6 @@ public class BaseStationServlet extends YgorServlet {
       throw new YgorException("Unable to execute controller command: " + cmd, e);
     }
   }
+
+
 }
