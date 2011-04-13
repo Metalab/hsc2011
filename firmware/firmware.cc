@@ -1,4 +1,5 @@
 
+// (cd vmcode/ && ./build.py)
 // Using http://svn.clifford.at/tools/trunk/arduino-cc.sh:
 // arduino-cc -P /dev/ttyACM0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp embedvm.c firmware_vm.cc firmware_evt.cc firmware_ser.cc firmware_net.cc
 
