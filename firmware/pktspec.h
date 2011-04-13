@@ -123,7 +123,9 @@ struct pktbuffer_s
 		} pkt_status_ack;
 
 		struct {
-			int running : 2; // 0: don't touch; 1: start; 2: stop; 3: single step (implicitly stops)
+			int set_running : 1;
+			int running : 1;
+			int singlestep : 1;
 			int reset : 1;
 			int set_stacksize : 1;
 			int set_interrupt : 1;
