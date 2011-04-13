@@ -40,6 +40,11 @@ void vm_reset(void)
 void vm_step(bool allow_send)
 {
 	if (!vm_running) return;
+        if (vm_error) {
+            Serial.print("* Not running due to error state ");
+            Serial.print(vm_error, DEC);
+            Serial.println("");
+        }
 	if (vm_error != VM_E_NONE) return;
 	if (vm.ip == VM_IP_STOP) return;
 	if (vm_suspend) {
@@ -98,6 +103,7 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 	if (VMMEM_STACK_START <= addr && addr + is16bit < VMMEM_STACK_END)
 	{
 		if (addr + is16bit < VMMEM_STACK_END - vm_stack_size) {
+			Serial.println("* Stack overflow");
 			vm_error = VM_E_STACKOVERFLOW;
 			return 0;
 		}
