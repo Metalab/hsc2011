@@ -49,6 +49,9 @@ enum pkttype_e
 	PKTT_STATUS = 'S',
 	PKTT_STATUS_ACK = 's',
 
+	PKTT_VMSTATUS = 'V',
+	PKTT_VMSTATUS_ACK = 'v',
+
 	PKTT_WRITE = 'W',
 	PKTT_WRITE_ACK = 'w',
 
@@ -100,14 +103,10 @@ struct pktbuffer_s
 		} pkt_event_ack;
 
 		struct {
-			int vm_stop : 1;
-			int vm_start : 1;
-			int set_ip : 1;
 			int set_rgb : 1;
 			int set_buzzer : 1;
 			int set_leds : 4;
 			int leds_val : 4;
-			uint16_t ip_val;
 			uint16_t buzzer_val;
 			uint8_t rgb_val[3];
 			// eventmask: [ MSB keyup3, .., keyup0, keydown3, .., keydown0 LSB ]
@@ -116,14 +115,40 @@ struct pktbuffer_s
 		} pkt_status;
 
 		struct {
-			int vm_running : 1;
 			int leds : 4;
 			int buttons : 4;
-			uint16_t ip;
 			uint16_t buzzer;
 			uint16_t rgb[3];
 			uint8_t eventmask;
 		} pkt_status_ack;
+
+		struct {
+			int running : 2; // 0: don't touch; 1: start; 2: stop; 3: single step (implicitly stops)
+			int reset : 1;
+			int set_stacksize : 1;
+			int set_interrupt : 1;
+			int set_ip : 1;
+			int set_fp : 1;
+			int set_sfp : 1;
+			int clear_error : 1;
+			int clear_suspend : 1;
+
+			uint16_t stacksize;
+			uint16_t ip;
+			uint16_t fp;
+			uint16_t sfp;
+		} pkt_vmstatus;
+
+		struct {
+			int running : 1;
+			int singlestep : 1;
+			int suspended : 1;
+			vm_error_e error;
+			uint16_t stacksize;
+			uint16_t ip;
+			uint16_t sp;
+			uint16_t sfp;
+		} pkt_vmstatus_ack;
 
 		struct {
 			unsigned int length : 5;
