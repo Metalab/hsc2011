@@ -107,8 +107,31 @@ void net_proc()
 		Serial.println("* Received ack that was expected to be already processed.");
 		break;
 	case 'W':
+		for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
+			vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
+
+		sendbuf.hdr.pkttype = 'w';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_write_ack);
+
+		net_send();
+		break;
 	case 'R':
-		/* TBD, fall through */
+		sendbuf.hdr.pkttype = 'r';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf.pkt_read_ack.length = recvbuf.pkt_read.length;
+		sendbuf.pkt_read_ack.addr = recvbuf.pkt_read.addr;
+		for (uint16_t i=0; i < sendbuf.pkt_read_ack.length; ++i)
+			sendbuf.pkt_read_ack.data[i] = vm_mem_read(sendbuf.pkt_read_ack.addr + i, false, NULL);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
+
+		net_send();
+
+		break;
 	case 'X':
 		// ack reset
 		sendbuf.hdr.pkttype = 'x';

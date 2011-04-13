@@ -254,10 +254,26 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 'W':
+		ser_printhex(pkt->pkt_write.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_write.addr);
+		for (int i=0; i<pkt->pkt_write.length; ++i)
+			ser_printhex(pkt->pkt_write.data[i]);
+		break;
 	case 'w':
+		break;
 	case 'R':
+		ser_printhex(pkt->pkt_read.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_read.addr);
+		break;
 	case 'r':
-		/* TBD */
+		// this is actually a copy of 'W' with s/pkt_write/pkt_read_ack/g
+		ser_printhex(pkt->pkt_read_ack.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_read_ack.addr);
+		for (int i=0; i<pkt->pkt_read_ack.length; ++i)
+			ser_printhex(pkt->pkt_read_ack.data[i]);
 		break;
 
 	case 'X':
@@ -464,10 +480,32 @@ void ser_poll()
 			sendbuf.pkt_status_ack.eventmask = ser_readhex();
 			break;
 		case 'W':
+			sendbuf.pkt_write.length = ser_readhex();
+			if (sendbuf.pkt_write.length > sizeof(sendbuf.pkt_write.data) / sizeof(*sendbuf.pkt_write.data))
+				goto parser_error;
+			sendbuf.pkt_write.addr = ser_readhex16();
+			for(int i = 0; i < sendbuf.pkt_write.length; ++i)
+				sendbuf.pkt_write.data[i] = ser_readhex();
+			sendbuf_len += sizeof(sendbuf.pkt_write) - 32 + sendbuf.pkt_write.length;
+			break;
 		case 'w':
+			break;
 		case 'R':
+			sendbuf.pkt_read.length = ser_readhex();
+			if (sendbuf.pkt_read.length > sizeof(sendbuf.pkt_read_ack.data) / sizeof(*sendbuf.pkt_read_ack.data))
+				goto parser_error;
+			sendbuf.pkt_read.addr = ser_readhex16();
+			sendbuf_len += sizeof(sendbuf.pkt_read);
+			break;
 		case 'r':
-			/* TBD */
+			// this is actually a copy of 'W' with s/pkt_write/pkt_read_ack/g
+			sendbuf.pkt_read_ack.length = ser_readhex();
+			if (sendbuf.pkt_read_ack.length > sizeof(sendbuf.pkt_read_ack.data) / sizeof(*sendbuf.pkt_read_ack.data))
+				goto parser_error;
+			sendbuf.pkt_read_ack.addr = ser_readhex16();
+			for(int i = 0; i < sendbuf.pkt_read_ack.length; ++i)
+				sendbuf.pkt_read_ack.data[i] = ser_readhex16();
+			sendbuf_len += sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
 			break;
 		case 'X':
 		case 'x':

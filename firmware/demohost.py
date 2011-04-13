@@ -107,6 +107,10 @@ while True:
             send_line('l %02x * %016x'%(seqnum, src))
             # send a warm welcome
             CommandToDevice('S', src, 'nn nyffffff n nnnn ff 0f', 's')
+            CommandToDevice('R', src, ' 12 0000', 'r')
+            CommandToDevice('W', src, ' 01 0004 02', 'w')
+            CommandToDevice('W', src, ' 02 0010 23 42', 'w')
+            CommandToDevice('R', src, ' 12 0000', 'r')
 
         if l[0] == 'E':
             if src not in connected_buzzers:
