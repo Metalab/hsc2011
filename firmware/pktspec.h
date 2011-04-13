@@ -126,8 +126,7 @@ struct pktbuffer_s
 		} pkt_status_ack;
 
 		struct {
-			int datamem : 1;
-			int length : 5;
+			unsigned int length : 5;
 			uint16_t addr;
 			uint8_t data[32];
 		} pkt_write;
@@ -137,14 +136,12 @@ struct pktbuffer_s
 		} pkt_write_ack;
 
 		struct {
-			int datamem : 1;
-			int length : 5;
+			unsigned int length : 5;
 			uint16_t addr;
 		} pkt_read;
 
 		struct {
-			int datamem : 1;
-			int length : 5;
+			unsigned int length : 5;
 			uint16_t addr;
 			uint8_t data[32];
 		} pkt_read_ack;

@@ -91,8 +91,23 @@ sent first and the minuscle is sent as a response):
   * ``r``, ``g``, ``b``: hex bytes for red/green/blue part of RGB LED
   * ``eventmask``: as in ``S``
 
-* ``W``, ``R``, ``w``, ``r``: write data to VM scratchpad RAM or program code
-  and appropriate acknowledgements (TBD)
+* ``W``: Write to VM memory. Custom arguments are::
+
+    <length> <addr> <data>
+
+  The arguments are:
+
+  * ``length``: one byte hex value; number of bytes to be written
+  * ``addr``: two byte hex value; VM address to write the first byte to
+  * ``data``: ``length`` bytes hex
+
+* ``w``: Acknowledgement for ``W`` (no arguments)
+
+* ``R``: Read from VM memory. The arguments ``<length> <addr>`` are interpreted
+  as in ``W``.
+
+* ``r``: Data requested using ``R``. The arguments are ``<length> <addr>
+  <data>`` as in ``W``, ``length`` and ``data`` being simply round-tripped.
 
 Direct control
 --------------
