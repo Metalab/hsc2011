@@ -184,8 +184,8 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 'S':
-		Serial.write(pkt->pkt_status.vm_stop ? 'y' : 'n');
 		Serial.write(pkt->pkt_status.vm_start ? 'y' : 'n');
+		Serial.write(pkt->pkt_status.vm_stop ? 'y' : 'n');
 		Serial.write(' ');
 		
 		Serial.write(pkt->pkt_status.set_ip ? 'y' : 'n');
@@ -424,8 +424,8 @@ void ser_poll()
 		case 'S':
 			sendbuf_len += sizeof(sendbuf.pkt_status);
 
-			sendbuf.pkt_status.vm_stop = ser_readbool();
 			sendbuf.pkt_status.vm_start = ser_readbool();
+			sendbuf.pkt_status.vm_stop = ser_readbool();
 
 			sendbuf.pkt_status.set_ip = ser_readbool();
 			if (sendbuf.pkt_status.set_ip)
