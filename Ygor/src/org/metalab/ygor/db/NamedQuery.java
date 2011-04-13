@@ -63,15 +63,15 @@ public class NamedQuery {
     try {
       this.result = pstmnt.executeQuery();
       rs_type = ResultSetType.RESULT_SET;
-    } catch (SQLException e) {
+    } catch (Exception e) {
       try {
         this.result = pstmnt.execute();
         rs_type = ResultSetType.BOOLEAN;
-      } catch (SQLException e1) {
+      } catch (Exception e1) {
         try {
           this.result = pstmnt.executeUpdate();
           rs_type = ResultSetType.INTEGER;
-        } catch (SQLException e2) {
+        } catch (Exception e2) {
           throw new YgorException("Unable to execute query", e);
         }
       }
@@ -84,9 +84,11 @@ public class NamedQuery {
     String line;
     char nl = '\n';
     
-    if ((line = reader.readLine()) != null && line.trim().startsWith("--"))
-      this.parameters = line.split("[,]");
-    else
+    if ((line = reader.readLine()) != null && (line = line.trim()).startsWith("--")) {
+      this.parameters = (line = line.substring(2)).split("[,]");
+      for (int i = 0; i < parameters.length; i++)
+        parameters[i] = parameters[i].trim();
+    } else
       sb.append(line).append(nl);
     
     while ((line = reader.readLine()) != null)

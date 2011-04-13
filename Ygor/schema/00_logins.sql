@@ -1,10 +1,9 @@
 CREATE TABLE LOGINS (
-	id INTEGER PRIMARY KEY,
-        src TEXT,
+        src TEXT PRIMARY KEY,
 	dest TEXT,
 	seqnum TEXT,
 	ibutton TEXT,
-	since DATE,
+	since TIME,
 	accepted BOOL,
 	ack BOOL
 );

@@ -3,7 +3,7 @@ package org.metalab.ygor.serial.packet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-public class VMInstruction extends Payload {
+public class VMStatus extends Payload {
   boolean start = false;
   boolean stop = false;
   
@@ -24,7 +24,7 @@ public class VMInstruction extends Payload {
   short eventmask = 0;
   short eventmaskmask = 0;
   
-  public VMInstruction(boolean start, boolean stop, short[] ip, short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
+  public VMStatus(boolean start, boolean stop, short[] ip, short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
     this.start = start;
     this.stop = stop;
     if(ip != null) {
@@ -51,7 +51,7 @@ public class VMInstruction extends Payload {
     this.eventmaskmask = eventmaskmask;
   }
   
-  public VMInstruction(String s) {
+  public VMStatus(String s) {
     String[] tokens = s.split("\\s");
     int i = 0;
     

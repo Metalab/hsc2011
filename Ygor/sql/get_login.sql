@@ -1,2 +1,2 @@
--- src, dest, seqnum
-select * from LOGINS where src=? and dest=? and seqnum=?
+-- id
+select * from LOGINS where ROWID=?

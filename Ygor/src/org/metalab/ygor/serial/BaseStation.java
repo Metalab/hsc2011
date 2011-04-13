@@ -63,11 +63,9 @@ public class BaseStation extends Service {
     }
   }
   
-  public void transmit(Packet msg) throws IOException {
+  public void transmit(Packet pkt) throws IOException {
     synchronized (txmutex) {
-      String msgString = msg.toString();
-      debug("TX: " + msgString);
-      out.write(msgString.getBytes());
+      transmit(pkt.toString());
     }
   }
 

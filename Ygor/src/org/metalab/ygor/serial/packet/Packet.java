@@ -6,8 +6,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import org.metalab.ygor.YgorException;
+import org.metalab.ygor.util.ParameterMap;
 
-public class Packet {
+public class Packet implements ParameterMap {
   public PacketType p_type = null;
   public short seqnum = -1;
   public String src = null;
@@ -80,16 +81,21 @@ public class Packet {
   public String toString() {
     // len = ptype(1) + seqnum(2) + src(16) + dest(16) + payloadLen(?) + newline(1)
     int len = 35 + payloadHex.length() + 1;
+    String seqNumHex = Integer.toHexString(seqnum);
+    if(seqNumHex.length() < 2)
+      seqNumHex = '0'+Integer.toHexString(seqnum);
     
     StringBuilder sb = new StringBuilder(len);
-    sb.append(p_type.commandLetter)
-    .append(Integer.toHexString(seqnum))
-    .append(src)
-    .append(dest)
-    .append(payload)
-    .append('\n');
+     char delim = ' ';
+    sb.append(p_type.commandLetter).append(delim)
+    .append(seqNumHex).append(delim)
+    .append(src).append(delim)
+    .append(dest).append(delim);
+    
+    if(payload != null)
+      sb.append(payload).append(delim);
 
-    return sb.toString();
+    return sb.toString().trim();
   }
 
   private Object parsePayload(String payload) {
@@ -131,7 +137,7 @@ public class Packet {
 	  return new Packet(p_type, seqnum, src, dest, payload);
 	}
 	
-  public HashMap<String, Object> createParameterMap() {
+  public HashMap<String, Object> getParameterMap() {
     HashMap<String, Object> paramMap = new HashMap<String, Object>();
     paramMap.put("src", this.src);
     paramMap.put("dest", this.dest);

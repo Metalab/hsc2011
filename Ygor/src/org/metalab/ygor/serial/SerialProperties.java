@@ -1,20 +1,14 @@
 package org.metalab.ygor.serial;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.print.event.PrintServiceAttributeEvent;
 
 public class SerialProperties {
 	private AtomicReference<Properties> properties = new AtomicReference<Properties>();

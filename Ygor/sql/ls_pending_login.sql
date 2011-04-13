@@ -1,1 +1,1 @@
-select * from LOGINS where accepted="false";
+select ROWID, * from LOGINS where accepted="false";
