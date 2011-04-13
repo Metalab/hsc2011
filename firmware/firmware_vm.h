@@ -6,7 +6,7 @@
 #include "vmcode/flash.hdr"
 
 #define VMMEM_QUICKHW_SIZE 16
-#define VMMEM_RAM_SIZE 256
+#define VMMEM_RAM_SIZE 512
 #define VMMEM_EEPROM_SIZE 256
 
 #define VMMEM_QUICKHW_START 0

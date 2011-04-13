@@ -107,10 +107,28 @@ while True:
             send_line('l %02x * %016x'%(seqnum, src))
             # send a warm welcome
             CommandToDevice('S', src, 'nn nyffffff n nnnn ff 0f', 's')
-            CommandToDevice('R', src, ' 12 0000', 'r')
-            CommandToDevice('W', src, ' 01 0004 02', 'w')
-            CommandToDevice('W', src, ' 02 0010 23 42', 'w')
-            CommandToDevice('R', src, ' 12 0000', 'r')
+            # don't do that -- sets error state!
+            #CommandToDevice('R', src, ' 12 0000', 'r')
+            #CommandToDevice('W', src, ' 01 0004 02', 'w')
+            #CommandToDevice('W', src, ' 02 0010 23 42', 'w')
+            #CommandToDevice('R', src, ' 12 0000', 'r')
+
+            try:
+                data = open('./vmcode/simon.py.bin').read()
+            except IOError:
+                print "not sending custom byte code for lack of file"
+            else:
+                CommandToDevice('S', src, 'nn n nnzzzz0000', 's') # stop vm
+
+                snippletsize = 30
+                for k in range(16, len(data), snippletsize):
+                    snipplet = data[k:k+snippletsize]
+                    CommandToDevice('W', src, ' %02x %04x '%(len(snipplet), k) + snipplet.encode('hex'), 'w')
+
+                (entrypoint, ) = [int(l.split()[0], 16) for l in open('./vmcode/simon.py.sym') if l.endswith(' main\n')]
+
+                CommandToDevice('S', src, 'nn y%04x nnzzzz0000'%entrypoint, 's')
+                CommandToDevice('S', src, 'yn n nnzzzz0000', 's') # start vm
 
         if l[0] == 'E':
             if src not in connected_buzzers:
