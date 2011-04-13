@@ -19,7 +19,10 @@ vm_error_e vm_error;
 bool vm_suspend;
 unsigned long vm_resumetime;
 uint8_t vm_rom[VMMEM_FLASH_SIZE] PROGMEM = {
-#include "vmcode/flash.progmem"
+#include "vmcode/flash.rom"
+};
+uint8_t vm_trampoline[VMMEM_TRAMPOLINE_SIZE] PROGMEM = {
+#include "vmcode/flash.trampoline"
 };
 
 void vm_reset(void)
@@ -109,6 +112,12 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 		else
 			return eeprom_read_byte((uint8_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr));
 	}
+        if (VMMEM_TRAMPOLINE_START <= addr && addr + is16bit < VMMEM_TRAMPOLINE_END) {
+		if (is16bit)
+			return (pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START]))<<8) | pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START+1]));
+		else
+			return pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START]));
+        }
 	if (VMMEM_FLASH_START <= addr && addr + is16bit < VMMEM_FLASH_END)
 	{
 		if (is16bit)
@@ -116,6 +125,9 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 		else
 			return pgm_read_byte(&(vm_rom[addr-VMMEM_FLASH_START]));
 	}
+        Serial.print("* Reading unmapped address ");
+        Serial.print(addr, HEX);
+        Serial.println("");
 	vm_error = VM_E_UNMAPPED;
 	return 0;
 }
@@ -191,6 +203,9 @@ void vm_mem_write(uint16_t addr, int16_t value, bool is16bit, void *ctx UNUSED)
 		vm_error = VM_E_RO;
 		return;
 	}
+        Serial.print("* Writing to unmapped address ");
+        Serial.print(addr, HEX);
+        Serial.println("");
 	vm_error = VM_E_UNMAPPED;
 	return;
 }
