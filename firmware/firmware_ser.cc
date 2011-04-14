@@ -212,9 +212,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 's':
-		Serial.write(pkt->pkt_status_ack.vm_running ? 'y' : 'n');
-		Serial.write(' ');
-
 		for (int i=0; i<4; i++) {
 			if ((pkt->pkt_status_ack.leds & (1 << i)) != 0)
 				Serial.write('y');
@@ -229,9 +226,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 			else
 				Serial.write('n');
 		}
-		Serial.write(' ');
-
-		ser_printhex16(pkt->pkt_status_ack.ip);
 		Serial.write(' ');
 
 		ser_printhex16(pkt->pkt_status_ack.buzzer);
@@ -281,11 +275,11 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 'v':
-		Serial.write(pkg->pkt_vmstatus_ack.running ? 'y' : 'n');
+		Serial.write(pkt->pkt_vmstatus_ack.running ? 'y' : 'n');
 		Serial.write(' ');
-		Serial.write(pkg->pkt_vmstatus_ack.singlestep ? 'y' : 'n');
+		Serial.write(pkt->pkt_vmstatus_ack.singlestep ? 'y' : 'n');
 		Serial.write(' ');
-		Serial.write(pkg->pkt_vmstatus_ack.suspend ? 'y' : 'n');
+		Serial.write(pkt->pkt_vmstatus_ack.suspended ? 'y' : 'n');
 		Serial.write(' ');
 		ser_printhex(pkt->pkt_vmstatus_ack.error);
 		Serial.write(' ');
@@ -515,13 +509,15 @@ void ser_poll()
 			sendbuf.pkt_status_ack.eventmask = ser_readhex();
 			break;
 		case 'V':
-			int r = ser_readtri();
-			sendbuf.pkt_vmstatus.set_running = r != -1;
-			sendbuf.pkt_vmstatus.running = r;
+			{
+				int r = ser_readtri();
+				sendbuf.pkt_vmstatus.set_running = r != -1;
+				sendbuf.pkt_vmstatus.running = r;
+			}
 
-			senfbuf.pkt_vmstatus.singlestep = ser_readbool();
+			sendbuf.pkt_vmstatus.singlestep = ser_readbool();
 
-			senfbuf.pkt_vmstatus.reset = ser_readbool();
+			sendbuf.pkt_vmstatus.reset = ser_readbool();
 
 			sendbuf.pkt_vmstatus.set_stacksize = ser_readbool();
 			if (sendbuf.pkt_vmstatus.set_stacksize)

@@ -145,7 +145,7 @@ struct pktbuffer_s
 			int running : 1;
 			int singlestep : 1;
 			int suspended : 1;
-			vm_error_e error;
+			int8_t error;
 			uint16_t stacksize;
 			uint16_t ip;
 			uint16_t sp;
