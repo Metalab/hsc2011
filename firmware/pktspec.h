@@ -130,14 +130,14 @@ struct pktbuffer_s
 			int set_stacksize : 1;
 			int set_interrupt : 1;
 			int set_ip : 1;
-			int set_fp : 1;
+			int set_sp : 1;
 			int set_sfp : 1;
 			int clear_error : 1;
 			int clear_suspend : 1;
 
 			uint16_t stacksize;
 			uint16_t ip;
-			uint16_t fp;
+			uint16_t sp;
 			uint16_t sfp;
 		} pkt_vmstatus;
 

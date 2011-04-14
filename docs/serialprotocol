@@ -87,7 +87,7 @@ sent first and the minuscle is sent as a response):
 * ``V``: Set VM status. Arguments are::
 
     <running> <singlestep> <reset> <set stacksize> [<stacksize>] <set
-    interrupt> <set ip> [<ip>] <set fp> [<fp>] <set sfp> [<sfp>] <clear error>
+    interrupt> <set ip> [<ip>] <set sp> [<sp>] <set sfp> [<sfp>] <clear error>
     <clear suspend>
 
   The arguments are defined as follows:
@@ -109,15 +109,17 @@ sent first and the minuscle is sent as a response):
     the memory address in ``ip`` as if this was the next address (only used in
     debugging)
   * ``ip``: two byte hex address used by ``set interrupt`` and ``set ip``
-  * ``set fp`` / ``fp``: if the boolean ``set fp`` is ``y``, the frame pointer
-    will be set to the two byte hex address in ``fp`` (only used in debugging)
-  * ``set sfp`` / ``sfp``: like ``set fp`` / ``fp`` for the stack frame pointer
+  * ``set sp`` / ``sp``: if the boolean ``set sp`` is ``y``, the stack pointer
+    will be set to the two byte hex address in ``sp`` (only used in debugging)
+  * ``set sfp`` / ``sfp``: like ``set sp`` / ``sp`` for the stack frame pointer
   * ``clear error``: boolean; if ``y``, the error flag gets cleared and the
     execution continues at the instruction after the instruction that created
     the error. The behavior of the instruction that caused the error is
-    undefined, which usually means that a memory access failed.
+    undefined, which usually means that a memory access failed. (only used for
+    debugging)
   * ``clear suspend``: boolean; if ``y`` and the machine is waiting for a delay
-    to end, this will clear the delay and start executing commands again
+    to end, this will clear the delay and start executing commands again (only
+    used for debugging)
 
 * ``v``: Acknowledgement for ``V``. Arguments are::
 
