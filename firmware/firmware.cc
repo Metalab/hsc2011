@@ -56,6 +56,7 @@ void reset_soft()
 	randomSeed(random(0xffff) ^ (my_addr[7] << 8 | my_addr[6]));
 
 	vm_reset();
+	net_reset();
 
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked

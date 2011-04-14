@@ -17,8 +17,24 @@ bool basestation;
 uint8_t ib_addr[8];
 uint8_t my_addr[8];
 uint8_t base_addr[8];
-uint16_t last_send_seq;
+uint8_t last_send_seq;
+uint16_t last_recv_seq; // if we set it to the 8 bit in the package, we'd need an additional binary to know if we are freshly reset
 uint16_t last_ping;
+
+bool net_really_process() {
+	/* guardian function to avoid duplicate execution
+	 *
+	 * enclose every capital letter command a buzzer needs to process in an
+	 * `if (net_really_process()) { ... }` block, then send an ack. if you
+	 * need data from the enclosed block in the ack (as opposed to state
+	 * you can get later as well), store it somewhere other than the send
+	 * buffer -- the send buffer might be overwritten in between, e.g. by a
+	 * button event.
+	 * */
+	if (last_recv_seq == recvbuf.hdr.seqnum) return false;
+	last_recv_seq = recvbuf.hdr.seqnum;
+	return true;
+}
 
 void net_proc()
 {
@@ -27,18 +43,21 @@ void net_proc()
 	switch (recvbuf.hdr.pkttype)
 	{
 	case 'S':
-		if (recvbuf.pkt_status.set_rgb) {
-			rgb(0, recvbuf.pkt_status.rgb_val[0]);
-			rgb(1, recvbuf.pkt_status.rgb_val[1]);
-			rgb(2, recvbuf.pkt_status.rgb_val[2]);
+		if (net_really_process())
+		{
+			if (recvbuf.pkt_status.set_rgb) {
+				rgb(0, recvbuf.pkt_status.rgb_val[0]);
+				rgb(1, recvbuf.pkt_status.rgb_val[1]);
+				rgb(2, recvbuf.pkt_status.rgb_val[2]);
+			}
+			if (recvbuf.pkt_status.set_buzzer)
+				buzzer(recvbuf.pkt_status.buzzer_val);
+			for (uint8_t i = 0; i < 4; ++i)
+				if (recvbuf.pkt_status.set_leds & (1<<i))
+					led(i, recvbuf.pkt_status.leds_val & (1<<i));
+			evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
+			evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 		}
-		if (recvbuf.pkt_status.set_buzzer)
-			buzzer(recvbuf.pkt_status.buzzer_val);
-		for (uint8_t i = 0; i < 4; ++i)
-			if (recvbuf.pkt_status.set_leds & (1<<i))
-				led(i, recvbuf.pkt_status.leds_val & (1<<i));
-		evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
-		evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
 		sendbuf.hdr.pkttype = 's';
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
@@ -56,34 +75,37 @@ void net_proc()
 		// anyway.
 		goto send_ack;
 	case 'V':
-		if (recvbuf.pkt_vmstatus.reset) vm_reset();
+		if (net_really_process())
+		{
+			if (recvbuf.pkt_vmstatus.reset) vm_reset();
 
-		if (recvbuf.pkt_vmstatus.set_running)
-			vm_running = recvbuf.pkt_vmstatus.running;
+			if (recvbuf.pkt_vmstatus.set_running)
+				vm_running = recvbuf.pkt_vmstatus.running;
 
-		if (recvbuf.pkt_vmstatus.set_singlestep)
-			vm_singlestep = recvbuf.pkt_vmstatus.singlestep;
+			if (recvbuf.pkt_vmstatus.set_singlestep)
+				vm_singlestep = recvbuf.pkt_vmstatus.singlestep;
 
-		if (recvbuf.pkt_vmstatus.set_stacksize)
-			vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
+			if (recvbuf.pkt_vmstatus.set_stacksize)
+				vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
 
-		if (recvbuf.pkt_vmstatus.set_interrupt)
-			embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip); // TBD: idempotency violation
+			if (recvbuf.pkt_vmstatus.set_interrupt)
+				embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip); // TBD: idempotency violation
 
-		if (recvbuf.pkt_vmstatus.set_ip)
-			vm.ip = recvbuf.pkt_vmstatus.ip;
+			if (recvbuf.pkt_vmstatus.set_ip)
+				vm.ip = recvbuf.pkt_vmstatus.ip;
 
-		if (recvbuf.pkt_vmstatus.set_sp)
-			vm.ip = recvbuf.pkt_vmstatus.sp;
+			if (recvbuf.pkt_vmstatus.set_sp)
+				vm.ip = recvbuf.pkt_vmstatus.sp;
 
-		if (recvbuf.pkt_vmstatus.set_sfp)
-			vm.ip = recvbuf.pkt_vmstatus.sfp;
+			if (recvbuf.pkt_vmstatus.set_sfp)
+				vm.ip = recvbuf.pkt_vmstatus.sfp;
 
-		if (recvbuf.pkt_vmstatus.clear_error)
-			vm_error = VM_E_NONE;
+			if (recvbuf.pkt_vmstatus.clear_error)
+				vm_error = VM_E_NONE;
 
-		if (recvbuf.pkt_vmstatus.clear_suspend)
-			vm_suspend = false;
+			if (recvbuf.pkt_vmstatus.clear_suspend)
+				vm_suspend = false;
+		}
 
 		sendbuf.hdr.pkttype = 'v';
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_vmstatus_ack);
@@ -108,8 +130,10 @@ void net_proc()
 		// software side to know that it was a retransmit.
 		goto send_ack;
 	case 'W':
-		for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
-			vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
+		if (net_really_process()) {
+			for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
+				vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
+		}
 
 		sendbuf.hdr.pkttype = 'w';
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_write_ack);
@@ -239,4 +263,8 @@ bool net_send_until_acked(uint8_t ack_type)
 
 		vm_step(false);
 	}
+}
+
+void net_reset() {
+	last_recv_seq = 0xffff;
 }
