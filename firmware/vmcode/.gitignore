@@ -5,3 +5,7 @@ flash.hdr
 flash.ihx
 flash.progmem
 flash.sym
+flash.rom
+flash.trampoline
+simon.py.bin
+simon.py.sym
