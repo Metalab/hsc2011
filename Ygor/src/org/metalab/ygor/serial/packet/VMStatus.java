@@ -1,15 +1,10 @@
+// i'd call this Status.java --chrysn
 package org.metalab.ygor.serial.packet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class VMStatus extends Payload {
-  boolean start = false;
-  boolean stop = false;
-  
-  boolean set_ip = false;
-  short[] ip = null;
-  
   boolean set_rgb = false;
   short[] rgb = null;
   
@@ -24,14 +19,7 @@ public class VMStatus extends Payload {
   short eventmask = 0;
   short eventmaskmask = 0;
   
-  public VMStatus(boolean start, boolean stop, short[] ip, short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
-    this.start = start;
-    this.stop = stop;
-    if(ip != null) {
-      this.set_ip = true;
-      this.ip = ip;
-    }
-    
+  public VMStatus(short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
     if(rgb != null) {
       this.set_rgb = true;
       this.rgb = rgb;
@@ -54,17 +42,6 @@ public class VMStatus extends Payload {
   public VMStatus(String s) {
     String[] tokens = s.split("\\s");
     int i = 0;
-    
-    start = Boolean.parseBoolean(tokens[i++]);
-    stop = Boolean.parseBoolean(tokens[i++]);
-
-    set_ip = Boolean.parseBoolean(tokens[i++]);
-    if(set_ip) {
-      ip = new short[2];
-      String iphex = tokens[i++];
-      ip[0] = Short.parseShort(iphex.substring(0,2), 16);
-      ip[1] = Short.parseShort(iphex.substring(2,4), 16);
-    }
 
     set_rgb = Boolean.parseBoolean(tokens[i++]);
     if(set_rgb) {
@@ -98,20 +75,6 @@ public class VMStatus extends Payload {
   public String toString() {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    pw.print(start);
-    pw.print(DELIM);
-    pw.print(stop);
-    pw.print(DELIM);
-    
-    pw.print(set_ip);
-    pw.print(DELIM);
-    
-    if(set_ip) {
-      pw.print(toHexByteString(ip[0]));
-      pw.print(DELIM);
-      pw.print(toHexByteString(ip[1]));
-      pw.print(DELIM);
-    }
     
     pw.print(set_rgb);
     pw.print(DELIM);
