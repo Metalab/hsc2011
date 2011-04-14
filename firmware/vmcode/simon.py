@@ -7,6 +7,7 @@ gv.rgb = gv.array8u(5, length=3)
 gv.button = gv.array8u(8, length=4)
 gv.buttons = gv.int8u(12)
 gv.buzzer = gv.int16(13)
+gv.padding = gv.int8u(15)
 
 def show(which):
     gv.led[which] = 1
