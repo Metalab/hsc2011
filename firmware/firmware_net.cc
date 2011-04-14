@@ -27,22 +27,6 @@ void net_proc()
 	switch (recvbuf.hdr.pkttype)
 	{
 	case 'S':
-		if (recvbuf.pkt_status.vm_stop)
-			vm_running = false;
-		if (recvbuf.pkt_status.vm_start)
-			vm_running = true;
-		if (recvbuf.pkt_status.vm_start && recvbuf.pkt_status.vm_stop)
-			vm_stop_next = true;
-		if (recvbuf.pkt_status.set_ip)
-		{
-			// this overwrites options previously set from
-			// vm_start/stop. this is desired -- starting and
-			// setting ip at the same time would cause the VM
-			// to run twice if acks are lost.
-			vm_running = false;
-			embedvm_interrupt(&vm, recvbuf.pkt_status.ip_val);
-		}
-
 		if (recvbuf.pkt_status.set_rgb) {
 			rgb(0, recvbuf.pkt_status.rgb_val[0]);
 			rgb(1, recvbuf.pkt_status.rgb_val[1]);
@@ -62,8 +46,6 @@ void net_proc()
 		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
-		sendbuf.pkt_status_ack.vm_running = vm_running;
-		sendbuf.pkt_status_ack.ip = vm.ip;
 		sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
 		sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
 		sendbuf.pkt_status_ack.buzzer = getbuzzer();
@@ -75,6 +57,51 @@ void net_proc()
 		// send just once -- if the ack gets lost, the host
 		// will send another 'S', and it has to be idempotent
 		// anyway.
+		net_send();
+		break;
+	case 'V':
+		if (recvbuf.pkt_vmstatus.reset) vm_reset();
+
+		if (recvbuf.pkt_vmstatus.set_running)
+			vm_running = recvbuf.pkt_vmstatus.running;
+
+		vm_stop_next |= recvbuf.pkt_vmstatus.singlestep;
+
+		if (recvbuf.pkt_vmstatus.set_stacksize)
+			vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
+
+		if (recvbuf.pkt_vmstatus.set_interrupt)
+			embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip); // TBD: idempotency violation
+
+		if (recvbuf.pkt_vmstatus.set_ip)
+			vm.ip = recvbuf.pkt_vmstatus.ip;
+
+		if (recvbuf.pkt_vmstatus.set_sp)
+			vm.ip = recvbuf.pkt_vmstatus.sp;
+
+		if (recvbuf.pkt_vmstatus.set_sfp)
+			vm.ip = recvbuf.pkt_vmstatus.sfp;
+
+		if (recvbuf.pkt_vmstatus.clear_error)
+			vm_error = VM_E_NONE;
+
+		if (recvbuf.pkt_vmstatus.clear_suspend)
+			vm_suspend = false;
+
+		sendbuf.hdr.pkttype = 'v';
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_vmstatus_ack);
+
+		sendbuf.pkt_vmstatus_ack.running = vm_running;
+		sendbuf.pkt_vmstatus_ack.singlestep = vm_stop_next;
+		sendbuf.pkt_vmstatus_ack.error = vm_error;
+		sendbuf.pkt_vmstatus_ack.stacksize = vm_stack_size;
+		sendbuf.pkt_vmstatus_ack.ip = vm.ip;
+		sendbuf.pkt_vmstatus_ack.sp = vm.sp;
+		sendbuf.pkt_vmstatus_ack.sfp = vm.sfp;
+
 		net_send();
 		break;
 	case 'E':
