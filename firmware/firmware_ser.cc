@@ -426,6 +426,8 @@ void ser_poll()
 	case 'e':
 	case 'S':
 	case 's':
+        case 'V':
+        case 'v':
 	case 'W':
 	case 'w':
 	case 'R':
@@ -509,6 +511,7 @@ void ser_poll()
 			sendbuf.pkt_status_ack.eventmask = ser_readhex();
 			break;
 		case 'V':
+			sendbuf_len += sizeof(sendbuf.pkt_vmstatus);
 			{
 				int r = ser_readtri();
 				sendbuf.pkt_vmstatus.set_running = r != -1;
@@ -542,6 +545,7 @@ void ser_poll()
 			sendbuf.pkt_vmstatus.clear_suspend = ser_readbool();
 			break;
 		case 'v':
+			sendbuf_len += sizeof(sendbuf.pkt_vmstatus_ack);
 			sendbuf.pkt_vmstatus_ack.running = ser_readbool();
 			sendbuf.pkt_vmstatus_ack.singlestep = ser_readbool();
 			sendbuf.pkt_vmstatus_ack.suspended = ser_readbool();

@@ -89,7 +89,7 @@ void net_proc()
 				vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
 
 			if (recvbuf.pkt_vmstatus.set_interrupt)
-				embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip); // TBD: idempotency violation
+				embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip);
 
 			if (recvbuf.pkt_vmstatus.set_ip)
 				vm.ip = recvbuf.pkt_vmstatus.ip;
@@ -161,6 +161,7 @@ send_ack:
 		net_send();
 		break;
 	case 's':
+        case 'v':
 	case 'w':
 	case 'r':
 	case 'L':
