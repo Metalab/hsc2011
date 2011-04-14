@@ -31,6 +31,7 @@ def yippie():
         gv.buzzer = 660
         gv.leds = 0x0a
         uf(1, 200)
+    uf(1, 500)
     gv.buzzer = 0
     gv.leds = 0
 
@@ -48,8 +49,7 @@ def main():
         for i in range(8):
             target = (sequence >> (2*i)) & 0x03
 
-            nextkeys = 0
-            while not nextkeys:
+            while True:
                 nextkeys = gv.buttons
 
                 if nextkeys == 1:
@@ -67,5 +67,10 @@ def main():
             if which != target:
                 fail()
                 break
+
+            while gv.buttons:
+                pass
+
+            show(which);
         else:
             yippie()
