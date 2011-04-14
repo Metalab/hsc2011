@@ -65,7 +65,7 @@ void net_proc()
 		if (recvbuf.pkt_vmstatus.set_running)
 			vm_running = recvbuf.pkt_vmstatus.running;
 
-		vm_stop_next |= recvbuf.pkt_vmstatus.singlestep;
+		vm_singlestep |= recvbuf.pkt_vmstatus.singlestep;
 
 		if (recvbuf.pkt_vmstatus.set_stacksize)
 			vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
@@ -95,7 +95,7 @@ void net_proc()
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_vmstatus_ack);
 
 		sendbuf.pkt_vmstatus_ack.running = vm_running;
-		sendbuf.pkt_vmstatus_ack.singlestep = vm_stop_next;
+		sendbuf.pkt_vmstatus_ack.singlestep = vm_singlestep;
 		sendbuf.pkt_vmstatus_ack.error = vm_error;
 		sendbuf.pkt_vmstatus_ack.stacksize = vm_stack_size;
 		sendbuf.pkt_vmstatus_ack.ip = vm.ip;

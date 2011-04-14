@@ -11,7 +11,7 @@
 #define UNUSED __attribute__((unused))
 
 bool vm_running;
-bool vm_stop_next;
+bool vm_singlestep;
 struct embedvm_s vm = { };
 uint8_t vm_mem[VMMEM_RAM_SIZE] = { };
 uint16_t vm_stack_size;
@@ -28,7 +28,7 @@ uint8_t vm_trampoline[VMMEM_TRAMPOLINE_SIZE] PROGMEM = {
 void vm_reset(void)
 {
 	vm_running = false;
-	vm_stop_next = false;
+	vm_singlestep = false;
 	vm.sp = vm.sfp = VMMEM_STACK_END;
 	vm_stack_size = VMMEM_RAM_SIZE / 2;
 	vm_error = VM_E_NONE;
@@ -57,10 +57,8 @@ void vm_step(bool allow_send)
 	if (!allow_send && vm_mem_read(vm.ip, false, 0) == 0xb5) return; /* TBD: there might be a better / generalized way to do this */
 
 	embedvm_exec(&vm);
-	if (vm_stop_next == true) {
-		vm_running = false;
-		vm_stop_next = false;
-	}
+	if (vm_singlestep == true && vm_error == VM_E_NONE)
+		vm_error = VM_E_SINGLESTEPPED;
 }
 
 int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)

@@ -59,7 +59,7 @@ enum vm_error_e
 };
 
 extern bool vm_running;
-extern bool vm_stop_next;
+extern bool vm_singlestep;
 extern uint16_t vm_stack_size;
 extern struct embedvm_s vm;
 extern vm_error_e vm_error;
