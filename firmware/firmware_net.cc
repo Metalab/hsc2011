@@ -41,9 +41,6 @@ void net_proc()
 		evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
 		sendbuf.hdr.pkttype = 's';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
 		sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
@@ -57,8 +54,7 @@ void net_proc()
 		// send just once -- if the ack gets lost, the host
 		// will send another 'S', and it has to be idempotent
 		// anyway.
-		net_send();
-		break;
+		goto send_ack;
 	case 'V':
 		if (recvbuf.pkt_vmstatus.reset) vm_reset();
 
@@ -89,9 +85,6 @@ void net_proc()
 			vm_suspend = false;
 
 		sendbuf.hdr.pkttype = 'v';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_vmstatus_ack);
 
 		sendbuf.pkt_vmstatus_ack.running = vm_running;
@@ -102,20 +95,44 @@ void net_proc()
 		sendbuf.pkt_vmstatus_ack.sp = vm.sp;
 		sendbuf.pkt_vmstatus_ack.sfp = vm.sfp;
 
-		net_send();
-		break;
+		goto send_ack;
 	case 'E':
 		// immediately ack -- no processing further than
 		// reporting to serial is required
 		sendbuf.hdr.pkttype = 'e';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
 
 		// send only once -- buzzer will re-transmit the same
 		// event, we'll ack it then, and it's up to the
 		// software side to know that it was a retransmit.
+		goto send_ack;
+	case 'W':
+		for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
+			vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
+
+		sendbuf.hdr.pkttype = 'w';
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_write_ack);
+
+		goto send_ack;
+	case 'R':
+		sendbuf.hdr.pkttype = 'r';
+		sendbuf.pkt_read_ack.length = recvbuf.pkt_read.length;
+		sendbuf.pkt_read_ack.addr = recvbuf.pkt_read.addr;
+		for (uint16_t i=0; i < sendbuf.pkt_read_ack.length; ++i)
+			sendbuf.pkt_read_ack.data[i] = vm_mem_read(sendbuf.pkt_read_ack.addr + i, false, NULL);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
+
+		goto send_ack;
+	case 'X':
+		// ack reset
+		do_soft_reset = true;
+		sendbuf.hdr.pkttype = 'x';
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
+
+send_ack:
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		net_send();
 		break;
 	case 's':
@@ -132,42 +149,6 @@ void net_proc()
 		// should never be needed -- this is sent from base to
 		// device and is already blocked on in net_send.
 		Serial.println("* Received ack that was expected to be already processed.");
-		break;
-	case 'W':
-		for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
-			vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
-
-		sendbuf.hdr.pkttype = 'w';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
-		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_write_ack);
-
-		net_send();
-		break;
-	case 'R':
-		sendbuf.hdr.pkttype = 'r';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
-		sendbuf.pkt_read_ack.length = recvbuf.pkt_read.length;
-		sendbuf.pkt_read_ack.addr = recvbuf.pkt_read.addr;
-		for (uint16_t i=0; i < sendbuf.pkt_read_ack.length; ++i)
-			sendbuf.pkt_read_ack.data[i] = vm_mem_read(sendbuf.pkt_read_ack.addr + i, false, NULL);
-		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
-
-		net_send();
-
-		break;
-	case 'X':
-		// ack reset
-		sendbuf.hdr.pkttype = 'x';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
-		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
-		net_send();
-		do_soft_reset = true;
 		break;
 	default:
 		Serial.println("* Received unknown command, not processed.");
