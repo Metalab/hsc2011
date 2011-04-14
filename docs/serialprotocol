@@ -94,6 +94,9 @@ sent first and the minuscle is sent as a response):
 
   * ``running``: tri-state describing whether or not the machine should execute
     instructions at all
+  * ``singlestep``: tri-state describing whether the machine will execute a
+    single instruction and then set the error state to VM_E_SINGLESTEPPED (only
+    used in debugging)
   * ``reset``: boolean; if ``y``, the machine is reset and stopped (memory
     content stays unchanged, just the internal state is reset)
   * ``set stacksize`` / ``stacksize``: if the boolean ``set stacksize`` is
@@ -102,9 +105,6 @@ sent first and the minuscle is sent as a response):
   * ``set interrupt``: boolean; if ``y``, the machine will continue executing
     code at the memory address in ``ip``, and continue where it left off
     afterwards
-  * ``singlestep``: boolean; if ``y``, the machine will execute a single
-    instruction and then set the error state to VM_E_SINGLESTEPPED (only used
-    in debugging)
   * ``set ip``: boolean; if ``y``, the machine will continue executing code at
     the memory address in ``ip`` as if this was the next address (only used in
     debugging)

@@ -61,7 +61,8 @@ void net_proc()
 		if (recvbuf.pkt_vmstatus.set_running)
 			vm_running = recvbuf.pkt_vmstatus.running;
 
-		vm_singlestep |= recvbuf.pkt_vmstatus.singlestep;
+		if (recvbuf.pkt_vmstatus.set_singlestep)
+			vm_singlestep = recvbuf.pkt_vmstatus.singlestep;
 
 		if (recvbuf.pkt_vmstatus.set_stacksize)
 			vm_stack_size = recvbuf.pkt_vmstatus.stacksize;

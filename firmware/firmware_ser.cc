@@ -242,7 +242,7 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		Serial.write(pkt->pkt_vmstatus.set_running ? (pkt->pkt_vmstatus.running ? 'y' : 'n') : 'z');
 		Serial.write(' ');
 
-		Serial.write(pkt->pkt_vmstatus.singlestep ? 'y' : 'n');
+		Serial.write(pkt->pkt_vmstatus.set_singlestep ? (pkt->pkt_vmstatus.singlestep ? 'y' : 'n') : 'z');
 		Serial.write(' ');
 		Serial.write(pkt->pkt_vmstatus.reset ? 'y' : 'n');
 		Serial.write(' ');
@@ -513,9 +513,11 @@ void ser_poll()
 				int r = ser_readtri();
 				sendbuf.pkt_vmstatus.set_running = r != -1;
 				sendbuf.pkt_vmstatus.running = r;
-			}
 
-			sendbuf.pkt_vmstatus.singlestep = ser_readbool();
+				r = ser_readtri();
+				sendbuf.pkt_vmstatus.set_singlestep = r != -1;
+				sendbuf.pkt_vmstatus.singlestep = r;
+			}
 
 			sendbuf.pkt_vmstatus.reset = ser_readbool();
 

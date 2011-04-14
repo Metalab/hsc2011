@@ -125,6 +125,7 @@ struct pktbuffer_s
 		struct {
 			int set_running : 1;
 			int running : 1;
+			int set_singlestep : 1;
 			int singlestep : 1;
 			int reset : 1;
 			int set_stacksize : 1;
