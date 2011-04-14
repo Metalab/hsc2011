@@ -53,16 +53,11 @@ sent first and the minuscle is sent as a response):
 
 * ``S``: Set the state of the device. Command specific arguments are::
 
-    <vm start> <vm stop> <set ip> [<ip>] <set rgb> [<r> <g> <b>] <set buzzer>
-    [<buzzer>] <led0>..<led3> <eventmaskmask> <eventmask>
+    <set rgb> [<r> <g> <b>] <set buzzer> [<buzzer>] <led0>..<led3>
+    <eventmaskmask> <eventmask>
 
-  The arguments are:
+  The arguments are defined as follows:
 
-  * ``vm start``: boolean. start the virtual machine
-  * ``vm stop``: boolean. stop the virtual machine (if both are set, the VM
-    will execute exactly one iteration)
-  * ``set ip``: boolean. if true, stop and reset the VM and set the instruction
-    pointer to the value ``ip`` (2 byte hex)
   * ``set rgb``: boolean. if true, set the RGB LED to the three hex byte values
     in ``r``/``g``/``b``
   * ``set buzzer``: boolean. if true, set the buzzer to the frequency in
@@ -74,15 +69,13 @@ sent first and the minuscle is sent as a response):
     3 down", then "button 0 up" until "button 3 up". Only those bits also
     present in ``eventmaskmask`` are actually set, the rest is kept as it is.
 
-* ``s``: Acknowledgement for ``s``, returns current state of the device. Custom
+* ``s``: Acknowledgement for ``S``, returns current state of the device. Custom
   arguments are::
 
-    <vm running> <led0>..<led3> <button0>..<button3> <ip> <buzzer> <r> <g> <b>
-    <eventmask>
+    <led0>..<led3> <button0>..<button3> <ip> <buzzer> <r> <g> <b> <eventmask>
 
-  The arguments are:
+  The arguments are defined as follows:
 
-  * ``vm running``: boolean; true if VM is running
   * ``led0`` to ``3``: four booleans indicating which LEDs are on
   * ``button0`` to ``3``: four booleans indicating which buttons are pressed
     (independent of the event mask)
@@ -91,11 +84,64 @@ sent first and the minuscle is sent as a response):
   * ``r``, ``g``, ``b``: hex bytes for red/green/blue part of RGB LED
   * ``eventmask``: as in ``S``
 
-* ``W``: Write to VM memory. Custom arguments are::
+* ``V``: Set VM status. Arguments are::
+
+    <running> <singlestep> <reset> <set stacksize> [<stacksize>] <set
+    interrupt> <set ip> [<ip>] <set sp> [<sp>] <set sfp> [<sfp>] <clear error>
+    <clear suspend>
+
+  The arguments are defined as follows:
+
+  * ``running``: tri-state describing whether or not the machine should execute
+    instructions at all
+  * ``singlestep``: tri-state describing whether the machine will execute a
+    single instruction and then set the error state to VM_E_SINGLESTEPPED (only
+    used in debugging)
+  * ``reset``: boolean; if ``y``, the machine is reset and stopped (memory
+    content stays unchanged, just the internal state is reset)
+  * ``set stacksize`` / ``stacksize``: if the boolean ``set stacksize`` is
+    ``y``, the stack size will be configured to the two byte hex value in
+    ``stacksize``
+  * ``set interrupt``: boolean; if ``y``, the machine will continue executing
+    code at the memory address in ``ip``, and continue where it left off
+    afterwards
+  * ``set ip``: boolean; if ``y``, the machine will continue executing code at
+    the memory address in ``ip`` as if this was the next address (only used in
+    debugging)
+  * ``ip``: two byte hex address used by ``set interrupt`` and ``set ip``
+  * ``set sp`` / ``sp``: if the boolean ``set sp`` is ``y``, the stack pointer
+    will be set to the two byte hex address in ``sp`` (only used in debugging)
+  * ``set sfp`` / ``sfp``: like ``set sp`` / ``sp`` for the stack frame pointer
+  * ``clear error``: boolean; if ``y``, the error flag gets cleared and the
+    execution continues at the instruction after the instruction that created
+    the error. The behavior of the instruction that caused the error is
+    undefined, which usually means that a memory access failed. (only used for
+    debugging)
+  * ``clear suspend``: boolean; if ``y`` and the machine is waiting for a delay
+    to end, this will clear the delay and start executing commands again (only
+    used for debugging)
+
+* ``v``: Acknowledgement for ``V``. Arguments are::
+
+    <running> <singlestep> <suspended> <error> <stacksize> <ip> <sp> <sfp>
+
+  The arguments are defined as follows:
+
+  * ``running``: boolean; ``y`` if the machine will execute commands (it might
+    though not do so due to error states)
+  * ``singlestep``: boolean; ``y`` if the machine is so configured as described
+    in ``V``
+  * ``suspended``: boolean; ``y`` if the machine is waiting for a delay to end
+  * ``error``: single byte hex; error code as described in ``firmware_vm.h``
+    (``vm_error_e``)
+  * ``stacksize``, ``ip``, ``sp``, ``sfp``: two byte hex addresses each, as
+    explained in ``V``
+
+* ``W``: Write to VM memory. Arguments are::
 
     <length> <addr> <data>
 
-  The arguments are:
+  The arguments are defined as follows:
 
   * ``length``: one byte hex value; number of bytes to be written
   * ``addr``: two byte hex value; VM address to write the first byte to
