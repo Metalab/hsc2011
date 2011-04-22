@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+use 5.010;
+use strictures;
+use AnyEvent qw();
+use Device::SerialPort qw();
+use Pod::Usage::CommandLine qw(GetOptions pod2usage);
+my %opts = (
+    port            => '/dev/ttyUSB0',
+    baud            => 57600,
+    parity          => 'none',
+    handshake       => 'none',
+    databits        => 8,
+    stopbits        => 1,
+    read_char_time  => 500,
+    read_const_time => 500,
+);
+GetOptions(\%opts, 'port:s', 'baud:i', 'parity:s', 'handshake:s', 'databits:i',
+    'stopbits:i', 'read_char_time:i', 'read_const_time:i');
+
+my $port = Device::SerialPort->new(delete $opts{port});
+for my $setting (keys %opts) {
+    $port->$setting($opts{$setting});
+}
+
+my %events;
+$events{buffered_read} = AE::io $port->{HANDLE}, 0, sub { my (undef, $bytes) = $port->read(1); print $bytes; };
+$events{stdin_ready} = AE::io *STDIN, 0, sub { my $line = scalar <STDIN>; print $line; $port->write($line); };
+$events{sig_term} = AE::signal TERM => sub { $port->close; exit; };
+$events{quit} = AE::cv->recv;
+
+__END__
+
+=encoding UTF-8
+
+=head1 NAME
+
+serial-filter - simple Unix filter writing STDIN to serial device
+
+=head1 SYNOPSIS
+
+    serial-filter [options]
+    serial-filter --port=/dev/ttyUSB1 --baud=115200
+
+=head2 Options
+
+    --port            
+    --baud            
+    --parity          
+    --handshake       
+    --databits        
+    --stopbits        
+    --read_char_time  
+    --read_const_time 
+    --help               brief help message
+    --man                full documentation
+
+=head1 OPTIONS
+
+Options can be abbreviated, see L<Getopt::Long/"Case and abbreviations">.
+For the meaning of settings, see L<Device::SerialPort>.
+
+=head2 --port
+
+Unix device name. Default is F</dev/ttyUSB0>.
+
+=head2 --baud
+
+Transfer rate. Default is C<57600>.
+
+=head2 --parity
+
+Parity. Default is C<'none'>.
+
+=head2 --handshake
+
+Handshake. Default is C<'none'>.
+
+=head2 --databits
+
+Amount of data bits. Default is C<8>.
+
+=head2 --stopbits
+
+Amount of stop bits. Default is C<1>.
+
+=head2 --read_char_time
+
+=head2 --read_const_time
+
+=head2 --help
+
+Print a brief help message and exits.
+
+=head2 --man
+
+Prints the manual page and exits.
+
+=head1 DESCRIPTION
+
+C<serial-filter> reads from the serial device and print to STDOUT, and also
+reads from STDIN and writes it to the serial device.
