@@ -44,7 +44,7 @@ serial-filter - simple Unix filter writing STDIN to serial device
 =head2 Options
 
     --port            
-    --baud            
+    --baudrate            
     --parity          
     --handshake       
     --databits        
@@ -63,7 +63,7 @@ For the meaning of settings, see L<Device::SerialPort>.
 
 Unix device name. Default is F</dev/ttyUSB0>.
 
-=head2 --baud
+=head2 --baudrate
 
 Transfer rate. Default is C<57600>.
 
@@ -99,3 +99,5 @@ Prints the manual page and exits.
 
 C<serial-filter> reads from the serial device and print to STDOUT, and also
 reads from STDIN and writes it to the serial device.
+
+Send SIGTERM to shut down cleanly.
