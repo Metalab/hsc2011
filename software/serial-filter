@@ -99,3 +99,5 @@ Prints the manual page and exits.
 
 C<serial-filter> reads from the serial device and print to STDOUT, and also
 reads from STDIN and writes it to the serial device.
+
+Send SIGTERM to shut down cleanly.
