@@ -66,10 +66,11 @@ public class BaseStation extends Service {
       try {
         int d;
 
-        while ((d = in.read()) != -1 && d != '\n')
+        while (((d = in.read()) != -1 && d != '\n') || sb.length() == 0)
           sb.append((char) d);
 
         String s = sb.toString();
+        
         debug("RX: " + s);
         if(!s.trim().startsWith("*") && !s.startsWith("-") && !s.startsWith("user")) {
           return Packet.parsePacket(s);
