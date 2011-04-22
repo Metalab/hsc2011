@@ -1,12 +1,9 @@
 package org.metalab.ygor.serial;
 
-import gnu.io.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.TooManyListenersException;
 
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
@@ -15,9 +12,9 @@ import org.metalab.ygor.serial.packet.Dispatcher;
 import org.metalab.ygor.serial.packet.Packet;
 
 public class BaseStation extends Service {
+  private Process serialPipeProc;
   private InputStream in;
   private OutputStream out;
-  private SerialPort serialPort;
 
   private Object rxmutex = new Object();
   private Object txmutex = new Object();
@@ -32,27 +29,23 @@ public class BaseStation extends Service {
     return dispatcher;
   }
 
-  private void init() throws NoSuchPortException, PortInUseException, UnsupportedCommOperationException, TooManyListenersException, IOException {
+  private void init() throws IOException {
     File serialConf = getYgorConfig().f(YgorConfig.SERIAL_CONF);
     SerialProperties props = new SerialProperties(serialConf);
     info(props.toString());
 
-    CommPortIdentifier portIdentifier = CommPortIdentifier.getPortIdentifier(props.getDevice());
-    if (portIdentifier.isCurrentlyOwned()) {
-      throw new RuntimeException("Port is currently in use");
-    } else {
-      CommPort commPort = portIdentifier.open(this.getClass().getName(), 2000);
+    String[] cmd = new String[] { 
+        "serialpipe", 
+        String.valueOf(props.getDevice()),
+        String.valueOf(props.getBaud()),
+        String.valueOf(props.getDatabits()), 
+        String.valueOf(props.getStopbits()),
+        String.valueOf(props.getParity())
+    };
 
-      if (commPort instanceof SerialPort) {
-        this.serialPort = (SerialPort) commPort;
-        this.serialPort.setSerialPortParams(props.getBaud(), props.getDatabits(), props.getStopbits(), props.getParity());
-
-        this.in = new SerialPortInputStream(serialPort);
-        this.out = serialPort.getOutputStream();
-      } else {
-        throw new RuntimeException("Not a RS323 port: " + props.getDevice());
-      }
-    }
+    this.serialPipeProc = Runtime.getRuntime().exec(cmd);
+    this.in = serialPipeProc.getInputStream();
+    this.out = serialPipeProc.getOutputStream();
   }
 
   public void transmit(String s) throws IOException {
@@ -121,14 +114,14 @@ public class BaseStation extends Service {
     }
 
     try {
-      if (serialPort != null)
-        serialPort.close();
+      if (serialPipeProc != null)
+        serialPipeProc.destroy();
     } catch (Exception e) {
       warn("Unable to close port", e);
     }
 
     in = null;
     out = null;
-    serialPort = null;
+    serialPipeProc = null;
   }
 }
