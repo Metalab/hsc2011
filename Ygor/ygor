@@ -1,1 +1,19 @@
-java -cp etc/ -jar ygor.jar etc/ygor.properties $1
+#!/bin/bash
+#[ $# -eq 0 ] && usage
+#CREATE=
+
+#function printUsage() {
+#  ygor <options>
+#
+#}
+
+#eval set -- "`getopt -o c --long create -n 'ygor' -- \"$@\"`"
+#while true ; do
+#        case "$1" in
+#                -c|--create) CREATE=--create ; shift ;;
+#                -?) printUsage;;
+#                --) break;;
+#        esac
+#done
+
+java -cp "etc/:bin/:lib/json_org.jar:lib/app.jar:lib/conn_chk.jar:lib/gnujsp09.jar:lib/jspengine.jar:lib/jsp.jar:lib/log4j-1.2.13.jar:lib/servlet-2-3.jar:lib/war.jar:lib/webserver.jar:lib/commons-codec-1.5.jar:lib/sqlitejdbc-v056.jar" org.metalab.ygor.YgorDaemon etc/ygor.properties $1
