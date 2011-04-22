@@ -80,7 +80,7 @@ public class YgorDaemon extends Service {
   
 	public static void printUsageAndExit() {
 		System.out
-				.println("Usage: xqd <config file> --create");
+				.println("Usage: ygor <config file> --create");
 		System.exit(1);
 	}
 	
