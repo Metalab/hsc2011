@@ -1,117 +1,118 @@
-// i'd call this Status.java --chrysn
 package org.metalab.ygor.serial.packet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class VMStatus extends Payload {
-  boolean set_rgb = false;
-  short[] rgb = null;
-  
-  boolean set_buzzer = false;
-  int buzzer = 0;
+  TriState running = null;
+  TriState singlestep = null;
+  boolean reset = false;
 
-  TriState led0 = null;
-  TriState led1 = null;
-  TriState led2 = null;
-  TriState led3 = null;
+  boolean set_interrupt = false;
+  boolean set_ip = false;
+  short[] ip = null;
   
-  short eventmask = 0;
-  short eventmaskmask = 0;
+  boolean set_sp = false;
+  short[] sp = null;
   
-  public VMStatus(short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
-    if(rgb != null) {
-      this.set_rgb = true;
-      this.rgb = rgb;
+  boolean set_sfp = false;
+  short[] sfp = null;
+
+  boolean clear_error = false;
+  boolean clear_suspend = false;
+
+  public VMStatus(TriState running, TriState singlestep, boolean reset, boolean set_interrupt, short[] ip, short[] sp, short[] sfp, boolean clear_error, boolean clear_suspend) {
+    this.running = running;
+    this.singlestep = singlestep;
+    this.reset = reset;
+
+    if(ip != null) {
+      if(set_interrupt) this.set_interrupt = true;
+      else this.set_ip = true;
+      this.ip = ip;
     }
-    
-    if(buzzer > 0) {
-      this.set_buzzer = true;
-      this.buzzer = buzzer;
+
+    if(sp != null) {
+      this.set_sp = true;
+      this.sp = sp;
     }
-    
-    this.led0 = led0;
-    this.led1 = led1;
-    this.led2 = led2;
-    this.led3 = led3;
-    
-    this.eventmask = eventmask;
-    this.eventmaskmask = eventmaskmask;
+
+    if(sfp != null) {
+      this.set_sfp = true;
+      this.sfp = sfp;
+    }
+
+    this.clear_error = clear_error;
+    this.clear_suspend = clear_suspend;
   }
-  
+
   public VMStatus(String s) {
     String[] tokens = s.split("\\s");
     int i = 0;
 
-    set_rgb = Boolean.parseBoolean(tokens[i++]);
-    if(set_rgb) {
-      rgb = new short[3];
-      
-      String rgbhex = tokens[i++];
-      rgb[0] = Short.parseShort(rgbhex.substring(0,2), 16);
-      rgb[1] = Short.parseShort(rgbhex.substring(2,4), 16);
-      rgb[2] = Short.parseShort(rgbhex.substring(4,6), 16);
+    running = TriState.parse(tokens[i++]);
+    singlestep = TriState.parse(tokens[i++]);
+    reset = Boolean.parseBoolean(tokens[i++]);
+
+    set_interrupt = Boolean.parseBoolean(tokens[i++]);
+    set_ip = Boolean.parseBoolean(tokens[i++]);
+    if(set_interrupt || set_ip) {
+      ip = new short[2];
+      String ipHex = tokens[i++];
+      ip[0] = Short.parseShort(ipHex.substring(0, 2), 16);
+      ip[1] = Short.parseShort(ipHex.substring(2, 4), 16);
     }
-    
-    set_buzzer = Boolean.parseBoolean(tokens[i++]);
-    if(set_buzzer) {
-      String buzzerHex = tokens[i++];
-      short lower = Short.parseShort(buzzerHex.substring(2,4), 16);
-      short higher = Short.parseShort(buzzerHex.substring(0,2), 16);
-      buzzer = buzzer | lower;
-      buzzer = buzzer | (higher << 8);
+
+    set_sp = Boolean.parseBoolean(tokens[i++]);
+    if(set_sp) {
+      sp = new short[2];
+      String spHex = tokens[i++];
+      sp[0] = Short.parseShort(spHex.substring(0, 2), 16);
+      sp[1] = Short.parseShort(spHex.substring(2, 4), 16);
     }
-    
-    led0 = TriState.parse(tokens[i++]);
-    led1 = TriState.parse(tokens[i++]);
-    led2 = TriState.parse(tokens[i++]);
-    led3 = TriState.parse(tokens[i++]);
-    
-    String eventHex = tokens[i++];
-    eventmask = Short.parseShort(eventHex.substring(0,2), 16);
-    eventmaskmask = Short.parseShort(eventHex.substring(2,4), 16);
+
+    set_sfp = Boolean.parseBoolean(tokens[i++]);
+    if(set_sfp) {
+      sfp = new short[2];
+      String sfpHex = tokens[i++];
+      sfp[0] = Short.parseShort(sfpHex.substring(0, 2), 16);
+      sfp[1] = Short.parseShort(sfpHex.substring(2, 4), 16);
+    }
+
+    clear_error = Boolean.parseBoolean(tokens[i++]);
+    clear_suspend = Boolean.parseBoolean(tokens[i++]);
   }
-  
+
   public String toString() {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    
-    pw.print(set_rgb);
-    pw.print(DELIM);
-    
-    if(set_rgb) {
-      pw.print(toHexByteString(rgb[0]));
-      pw.print(DELIM);
-      pw.print(toHexByteString(rgb[1]));
-      pw.print(DELIM);
-      pw.print(toHexByteString(rgb[2]));
-      pw.print(DELIM);
+
+    pw.print(running); pw.print(DELIM);
+    pw.print(singlestep); pw.print(DELIM);
+    pw.print(reset); pw.print(DELIM);
+
+    pw.print(set_interrupt); pw.print(DELIM);
+    pw.print(set_ip); pw.print(DELIM);
+    if(set_interrupt || set_ip) {
+      pw.print(toHexByteString(ip[0]));
+      pw.print(toHexByteString(ip[1]));
     }
-    
-    pw.print(set_buzzer);
-    pw.print(DELIM);
-    
-    if(set_buzzer) {
-      pw.print(toHexByteString(buzzer));
-      pw.print(DELIM);
-      pw.print(toHexByteString(buzzer, 1));
-      pw.print(DELIM);
+
+    pw.print(set_sp); pw.print(DELIM);
+    if(set_sp) {
+      pw.print(toHexByteString(sp[0]));
+      pw.print(toHexByteString(sp[1]));
     }
-    
-    pw.print(led0);
-    pw.print(DELIM);
-    pw.print(led1);
-    pw.print(DELIM);
-    pw.print(led2);
-    pw.print(DELIM);
-    pw.print(led3);
-    pw.print(DELIM);
-    
-    pw.print(toHexByteString(eventmask));
-    pw.print(DELIM);
-    pw.print(toHexByteString(eventmaskmask));
-    pw.print(DELIM);
-    
+
+    pw.print(set_sfp); pw.print(DELIM);
+    if(set_sfp) {
+      pw.print(toHexByteString(sfp[0]));
+      pw.print(toHexByteString(sfp[1]));
+    }
+
+    pw.print(clear_error); pw.print(DELIM);
+    pw.print(clear_suspend); pw.print(DELIM);
+
     return sw.toString();
   }
 }

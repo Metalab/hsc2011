@@ -1,7 +1,6 @@
-// i'd call this StatusResponse.java --chrysn
 package org.metalab.ygor.serial.packet;
 
-public class VMEvent extends Payload {
+public class StatusResponse extends Payload {
   TriState led0;
   TriState led1;
   TriState led2;
