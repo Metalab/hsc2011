@@ -6,7 +6,7 @@ use Device::SerialPort qw();
 use Pod::Usage::CommandLine qw(GetOptions pod2usage);
 my %opts = (
     port            => '/dev/ttyUSB0',
-    baud            => 57600,
+    baudrate        => 57600,
     parity          => 'none',
     handshake       => 'none',
     databits        => 8,
@@ -14,7 +14,7 @@ my %opts = (
     read_char_time  => 500,
     read_const_time => 500,
 );
-GetOptions(\%opts, 'port:s', 'baud:i', 'parity:s', 'handshake:s', 'databits:i',
+GetOptions(\%opts, 'port:s', 'baudrate:i', 'parity:s', 'handshake:s', 'databits:i',
     'stopbits:i', 'read_char_time:i', 'read_const_time:i');
 
 my $port = Device::SerialPort->new(delete $opts{port});
