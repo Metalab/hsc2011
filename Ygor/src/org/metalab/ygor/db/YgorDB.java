@@ -29,7 +29,14 @@ public class YgorDB extends Service {
     } catch (ClassNotFoundException e) {
       throw new YgorException("Unable to load JDBC driver", e);
     }
-
+    if (conf.b(YgorConfig.DB_ALLOW_CREATE)) {
+      File dbFile = new File(getYgorConfig().s(YgorConfig.DB_URL).split("[:]")[2]);
+      try {
+        dbFile.delete();
+      } catch (Exception e) {
+        warn("Unable to delete db file: " + dbFile.getName(), e);
+      }
+    }
     try {
       this.connection = DriverManager.getConnection(conf.s(YgorConfig.DB_URL));
     } catch (SQLException e) {
@@ -50,14 +57,7 @@ public class YgorDB extends Service {
   }
 
   public void bootstrap() throws YgorException {
-    File schemaDir = getYgorConfig().f(YgorConfig.DB_SCHEMA);
-    File dbFile = new File(getYgorConfig().s(YgorConfig.DB_URL).split("[:]")[2]);
-    try {
-      dbFile.delete();
-    } catch (Exception e) {
-      warn("Unable to delete db file: " + dbFile.getName(), e);
-    }
-    
+    File schemaDir = getYgorConfig().f(YgorConfig.DB_SCHEMA);    
     String lastQuery = null;
     try {
       NamedQuery[] sqlListing = NamedQuery.listSqlFiles(schemaDir);
