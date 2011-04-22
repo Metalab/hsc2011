@@ -3,13 +3,9 @@ package org.metalab.ygor.db;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
 
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.db.NamedQuery.ResultSetType;
