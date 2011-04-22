@@ -60,10 +60,11 @@ public class Dispatcher extends Service {
         break;
         
       case PKTT_STATUS:
-        
+      case PKTT_VMSTATUS:
         break;
 
       case PKTT_STATUS_ACK:
+      case PKTT_VMSTATUS_ACK:
         YgorDaemon.baseStation().transmit(pkt);
         break;
 

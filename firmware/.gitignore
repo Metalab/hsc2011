@@ -3,5 +3,3 @@ firmware.elf
 firmware.hex
 ioexample.elf
 ioexample.hex
-embedvm.c
-embedvm.h

@@ -17,8 +17,24 @@ bool basestation;
 uint8_t ib_addr[8];
 uint8_t my_addr[8];
 uint8_t base_addr[8];
-uint16_t last_send_seq;
+uint8_t last_send_seq;
+uint16_t last_recv_seq; // if we set it to the 8 bit in the package, we'd need an additional binary to know if we are freshly reset
 uint16_t last_ping;
+
+bool net_really_process() {
+	/* guardian function to avoid duplicate execution
+	 *
+	 * enclose every capital letter command a buzzer needs to process in an
+	 * `if (net_really_process()) { ... }` block, then send an ack. if you
+	 * need data from the enclosed block in the ack (as opposed to state
+	 * you can get later as well), store it somewhere other than the send
+	 * buffer -- the send buffer might be overwritten in between, e.g. by a
+	 * button event.
+	 * */
+	if (last_recv_seq == recvbuf.hdr.seqnum) return false;
+	last_recv_seq = recvbuf.hdr.seqnum;
+	return true;
+}
 
 void net_proc()
 {
@@ -27,43 +43,25 @@ void net_proc()
 	switch (recvbuf.hdr.pkttype)
 	{
 	case 'S':
-		if (recvbuf.pkt_status.vm_stop)
-			vm_running = false;
-		if (recvbuf.pkt_status.vm_start)
-			vm_running = true;
-		if (recvbuf.pkt_status.vm_start && recvbuf.pkt_status.vm_stop)
-			vm_stop_next = true;
-		if (recvbuf.pkt_status.set_ip)
+		if (net_really_process())
 		{
-			// this overwrites options previously set from
-			// vm_start/stop. this is desired -- starting and
-			// setting ip at the same time would cause the VM
-			// to run twice if acks are lost.
-			vm_running = false;
-			embedvm_interrupt(&vm, recvbuf.pkt_status.ip_val);
+			if (recvbuf.pkt_status.set_rgb) {
+				rgb(0, recvbuf.pkt_status.rgb_val[0]);
+				rgb(1, recvbuf.pkt_status.rgb_val[1]);
+				rgb(2, recvbuf.pkt_status.rgb_val[2]);
+			}
+			if (recvbuf.pkt_status.set_buzzer)
+				buzzer(recvbuf.pkt_status.buzzer_val);
+			for (uint8_t i = 0; i < 4; ++i)
+				if (recvbuf.pkt_status.set_leds & (1<<i))
+					led(i, recvbuf.pkt_status.leds_val & (1<<i));
+			evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
+			evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 		}
-
-		if (recvbuf.pkt_status.set_rgb) {
-			rgb(0, recvbuf.pkt_status.rgb_val[0]);
-			rgb(1, recvbuf.pkt_status.rgb_val[1]);
-			rgb(2, recvbuf.pkt_status.rgb_val[2]);
-		}
-		if (recvbuf.pkt_status.set_buzzer)
-			buzzer(recvbuf.pkt_status.buzzer_val);
-		for (uint8_t i = 0; i < 4; ++i)
-			if (recvbuf.pkt_status.set_leds & (1<<i))
-				led(i, recvbuf.pkt_status.leds_val & (1<<i));
-		evt_button_mask &=~ recvbuf.pkt_status.eventmask_setbits; // clear all bits that are to be set
-		evt_button_mask |= recvbuf.pkt_status.eventmask_val & recvbuf.pkt_status.eventmask_setbits;
 
 		sendbuf.hdr.pkttype = 's';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_status_ack);
 
-		sendbuf.pkt_status_ack.vm_running = vm_running;
-		sendbuf.pkt_status_ack.ip = vm.ip;
 		sendbuf.pkt_status_ack.leds = getled(0) | (getled(1) << 1) | (getled(2) << 2) | (getled(3) << 3);
 		sendbuf.pkt_status_ack.buttons = button(0) | (button(1) << 1) | (button(2) << 2) | (button(3) << 3);
 		sendbuf.pkt_status_ack.buzzer = getbuzzer();
@@ -75,23 +73,95 @@ void net_proc()
 		// send just once -- if the ack gets lost, the host
 		// will send another 'S', and it has to be idempotent
 		// anyway.
-		net_send();
-		break;
+		goto send_ack;
+	case 'V':
+		if (net_really_process())
+		{
+			if (recvbuf.pkt_vmstatus.reset) vm_reset();
+
+			if (recvbuf.pkt_vmstatus.set_running)
+				vm_running = recvbuf.pkt_vmstatus.running;
+
+			if (recvbuf.pkt_vmstatus.set_singlestep)
+				vm_singlestep = recvbuf.pkt_vmstatus.singlestep;
+
+			if (recvbuf.pkt_vmstatus.set_stacksize)
+				vm_stack_size = recvbuf.pkt_vmstatus.stacksize;
+
+			if (recvbuf.pkt_vmstatus.set_interrupt)
+				embedvm_interrupt(&vm, recvbuf.pkt_vmstatus.ip);
+
+			if (recvbuf.pkt_vmstatus.set_ip)
+				vm.ip = recvbuf.pkt_vmstatus.ip;
+
+			if (recvbuf.pkt_vmstatus.set_sp)
+				vm.ip = recvbuf.pkt_vmstatus.sp;
+
+			if (recvbuf.pkt_vmstatus.set_sfp)
+				vm.ip = recvbuf.pkt_vmstatus.sfp;
+
+			if (recvbuf.pkt_vmstatus.clear_error)
+				vm_error = VM_E_NONE;
+
+			if (recvbuf.pkt_vmstatus.clear_suspend)
+				vm_suspend = false;
+		}
+
+		sendbuf.hdr.pkttype = 'v';
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_vmstatus_ack);
+
+		sendbuf.pkt_vmstatus_ack.running = vm_running;
+		sendbuf.pkt_vmstatus_ack.singlestep = vm_singlestep;
+		sendbuf.pkt_vmstatus_ack.error = vm_error;
+		sendbuf.pkt_vmstatus_ack.stacksize = vm_stack_size;
+		sendbuf.pkt_vmstatus_ack.ip = vm.ip;
+		sendbuf.pkt_vmstatus_ack.sp = vm.sp;
+		sendbuf.pkt_vmstatus_ack.sfp = vm.sfp;
+
+		goto send_ack;
 	case 'E':
 		// immediately ack -- no processing further than
 		// reporting to serial is required
 		sendbuf.hdr.pkttype = 'e';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
 
 		// send only once -- buzzer will re-transmit the same
 		// event, we'll ack it then, and it's up to the
 		// software side to know that it was a retransmit.
+		goto send_ack;
+	case 'W':
+		if (net_really_process()) {
+			for (uint16_t i=0; i < recvbuf.pkt_write.length; ++i)
+				vm_mem_write(recvbuf.pkt_write.addr + i, recvbuf.pkt_write.data[i], false, NULL);
+		}
+
+		sendbuf.hdr.pkttype = 'w';
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_write_ack);
+
+		goto send_ack;
+	case 'R':
+		sendbuf.hdr.pkttype = 'r';
+		sendbuf.pkt_read_ack.length = recvbuf.pkt_read.length;
+		sendbuf.pkt_read_ack.addr = recvbuf.pkt_read.addr;
+		for (uint16_t i=0; i < sendbuf.pkt_read_ack.length; ++i)
+			sendbuf.pkt_read_ack.data[i] = vm_mem_read(sendbuf.pkt_read_ack.addr + i, false, NULL);
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s) + sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
+
+		goto send_ack;
+	case 'X':
+		// ack reset
+		do_soft_reset = true;
+		sendbuf.hdr.pkttype = 'x';
+		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
+
+send_ack:
+		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
+		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
+		memcpy(&sendbuf.hdr.src, &my_addr, 8);
 		net_send();
 		break;
 	case 's':
+        case 'v':
 	case 'w':
 	case 'r':
 	case 'L':
@@ -105,19 +175,6 @@ void net_proc()
 		// should never be needed -- this is sent from base to
 		// device and is already blocked on in net_send.
 		Serial.println("* Received ack that was expected to be already processed.");
-		break;
-	case 'W':
-	case 'R':
-		/* TBD, fall through */
-	case 'X':
-		// ack reset
-		sendbuf.hdr.pkttype = 'x';
-		sendbuf.hdr.seqnum = recvbuf.hdr.seqnum;
-		memcpy(&sendbuf.hdr.dst, &recvbuf.hdr.src, 8);
-		memcpy(&sendbuf.hdr.src, &my_addr, 8);
-		sendbuf_len = sizeof(struct pktbuffer_hdr_s);
-		net_send();
-		do_soft_reset = true;
 		break;
 	default:
 		Serial.println("* Received unknown command, not processed.");
@@ -207,4 +264,8 @@ bool net_send_until_acked(uint8_t ack_type)
 
 		vm_step(false);
 	}
+}
+
+void net_reset() {
+	last_recv_seq = 0xffff;
 }

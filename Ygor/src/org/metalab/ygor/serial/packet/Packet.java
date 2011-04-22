@@ -31,6 +31,9 @@ public class Packet implements ParameterMap {
 	  PKTT_STATUS('S'),
 	  PKTT_STATUS_ACK('s'),
 
+	  PKTT_VMSTATUS('V'),
+	  PKTT_VMSTATUS_ACK('v'),
+
 	  PKTT_WRITE('W'),
 	  PKTT_WRITE_ACK('w'),
 

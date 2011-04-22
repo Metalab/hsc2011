@@ -11,7 +11,7 @@
 #define UNUSED __attribute__((unused))
 
 bool vm_running;
-bool vm_stop_next;
+bool vm_singlestep;
 struct embedvm_s vm = { };
 uint8_t vm_mem[VMMEM_RAM_SIZE] = { };
 uint16_t vm_stack_size;
@@ -19,13 +19,16 @@ vm_error_e vm_error;
 bool vm_suspend;
 unsigned long vm_resumetime;
 uint8_t vm_rom[VMMEM_FLASH_SIZE] PROGMEM = {
-#include "vmcode/flash.progmem"
+#include "vmcode/flash.rom"
+};
+uint8_t vm_trampoline[VMMEM_TRAMPOLINE_SIZE] PROGMEM = {
+#include "vmcode/flash.trampoline"
 };
 
 void vm_reset(void)
 {
 	vm_running = false;
-	vm_stop_next = false;
+	vm_singlestep = false;
 	vm.sp = vm.sfp = VMMEM_STACK_END;
 	vm_stack_size = VMMEM_RAM_SIZE / 2;
 	vm_error = VM_E_NONE;
@@ -37,6 +40,11 @@ void vm_reset(void)
 void vm_step(bool allow_send)
 {
 	if (!vm_running) return;
+        if (vm_error) {
+            Serial.print("* Not running due to error state ");
+            Serial.print(vm_error, DEC);
+            Serial.println("");
+        }
 	if (vm_error != VM_E_NONE) return;
 	if (vm.ip == VM_IP_STOP) return;
 	if (vm_suspend) {
@@ -49,10 +57,8 @@ void vm_step(bool allow_send)
 	if (!allow_send && vm_mem_read(vm.ip, false, 0) == 0xb5) return; /* TBD: there might be a better / generalized way to do this */
 
 	embedvm_exec(&vm);
-	if (vm_stop_next == true) {
-		vm_running = false;
-		vm_stop_next = false;
-	}
+	if (vm_singlestep == true && vm_error == VM_E_NONE)
+		vm_error = VM_E_SINGLESTEPPED;
 }
 
 int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
@@ -95,6 +101,7 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 	if (VMMEM_STACK_START <= addr && addr + is16bit < VMMEM_STACK_END)
 	{
 		if (addr + is16bit < VMMEM_STACK_END - vm_stack_size) {
+			Serial.println("* Stack overflow");
 			vm_error = VM_E_STACKOVERFLOW;
 			return 0;
 		}
@@ -109,6 +116,12 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 		else
 			return eeprom_read_byte((uint8_t*)(VM_PHYSICAL_EEPROM_START - VMMEM_EEPROM_START + addr));
 	}
+        if (VMMEM_TRAMPOLINE_START <= addr && addr + is16bit < VMMEM_TRAMPOLINE_END) {
+		if (is16bit)
+			return (pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START]))<<8) | pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START+1]));
+		else
+			return pgm_read_byte(&(vm_trampoline[addr-VMMEM_TRAMPOLINE_START]));
+        }
 	if (VMMEM_FLASH_START <= addr && addr + is16bit < VMMEM_FLASH_END)
 	{
 		if (is16bit)
@@ -116,6 +129,9 @@ int16_t vm_mem_read(uint16_t addr, bool is16bit, void *ctx UNUSED)
 		else
 			return pgm_read_byte(&(vm_rom[addr-VMMEM_FLASH_START]));
 	}
+        Serial.print("* Reading unmapped address ");
+        Serial.print(addr, HEX);
+        Serial.println("");
 	vm_error = VM_E_UNMAPPED;
 	return 0;
 }
@@ -191,6 +207,9 @@ void vm_mem_write(uint16_t addr, int16_t value, bool is16bit, void *ctx UNUSED)
 		vm_error = VM_E_RO;
 		return;
 	}
+        Serial.print("* Writing to unmapped address ");
+        Serial.print(addr, HEX);
+        Serial.println("");
 	vm_error = VM_E_UNMAPPED;
 	return;
 }

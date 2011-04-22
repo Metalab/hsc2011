@@ -9,6 +9,8 @@
 #include "pktspec.h"
 #include "hardware.h"
 
+uint16_t last_pwrcheck_millis;
+
 void poll_RF12()
 {
 	if (rf12_recvDone() && rf12_crc == 0)
@@ -31,10 +33,31 @@ void poll_RF12()
 void setup()
 {
 	hw_setup();
+	last_pwrcheck_millis = millis();
 }
 
 void loop()
 {
+	int c = Serial.read();
+	if (c >= 0) {
+		Serial.print("* Got RS232 char: ");
+		Serial.print(c, DEC);
+		if (c > 32 && c < 127) {
+			Serial.print(" '");
+			Serial.write(c);
+			Serial.println("'");
+		} else {
+			Serial.println(" (non printable)");
+		}
+	}
+
+	if ((uint16_t)(millis() - last_pwrcheck_millis) > 1000)
+	{
+		Serial.print("* Power status: ");
+		Serial.println(getpwr(), DEC);
+		last_pwrcheck_millis = millis();
+	}
+
 	if (button(0))
 	{
 		Serial.println("* Running Button 0 demo.");

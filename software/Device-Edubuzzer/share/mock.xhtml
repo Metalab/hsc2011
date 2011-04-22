@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>Mock Edubuzzer</title>
+        <style>
+            input {border: 0.25em black outset}
+            form {border: 1em solid; display: inline}
+            #green {border-color: green}
+            #red {border-color: red}
+            #yellow {border-color: yellow}
+            #blue {border-color: blue}
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js" />
+    </head>
+    <body>
+        <form action="/button_green" method="POST" id="green">
+            <input type="submit" value="" />
+        </form>
+        <form action="/button_red" method="POST" id="red">
+            <input type="submit" value="" />
+        </form>
+        <form action="/button_yellow" method="POST" id="yellow">
+            <input type="submit" value="" />
+        </form>
+        <form action="/button_blue" method="POST" id="blue">
+            <input type="submit" value="" />
+        </form>
+        <form action="/destroy" method="POST">
+            <input type="submit" value="☠" />
+        </form>
+        <script>
+            $('form[action*="/button"]').submit( function () {
+                var e_input = $(this).children();
+                if ('outset' == e_input.css('border-top-style')) {
+                    e_input.css('border-style', 'inset');
+                } else {
+                    e_input.css('border-style', 'outset');
+                };
+            });
+        </script>
+    </body>
+</html>

@@ -1,4 +1,5 @@
 
+// (cd vmcode/ && ./build.py)
 // Using http://svn.clifford.at/tools/trunk/arduino-cc.sh:
 // arduino-cc -P /dev/ttyACM0 -X 57600 firmware.cc hardware.cc RF12.cpp OneWire.cpp embedvm.c firmware_vm.cc firmware_evt.cc firmware_ser.cc firmware_net.cc
 
@@ -55,6 +56,7 @@ void reset_soft()
 	randomSeed(random(0xffff) ^ (my_addr[7] << 8 | my_addr[6]));
 
 	vm_reset();
+	net_reset();
 
 	/* TBD: send LOGIN if a MAC address is configured either from eeprom or
 	 * from an iButton -- use modified form or modify net_send_until_acked

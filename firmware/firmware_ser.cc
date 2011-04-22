@@ -184,15 +184,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 'S':
-		Serial.write(pkt->pkt_status.vm_stop ? 'y' : 'n');
-		Serial.write(pkt->pkt_status.vm_start ? 'y' : 'n');
-		Serial.write(' ');
-		
-		Serial.write(pkt->pkt_status.set_ip ? 'y' : 'n');
-		if (pkt->pkt_status.set_ip)
-			ser_printhex16(pkt->pkt_status.ip_val);
-		Serial.write(' ');
-		
 		Serial.write(pkt->pkt_status.set_rgb ? 'y' : 'n');
 		if (pkt->pkt_status.set_rgb) {
 			ser_printhex(pkt->pkt_status.rgb_val[0]);
@@ -221,9 +212,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		break;
 
 	case 's':
-		Serial.write(pkt->pkt_status_ack.vm_running ? 'y' : 'n');
-		Serial.write(' ');
-
 		for (int i=0; i<4; i++) {
 			if ((pkt->pkt_status_ack.leds & (1 << i)) != 0)
 				Serial.write('y');
@@ -240,9 +228,6 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		}
 		Serial.write(' ');
 
-		ser_printhex16(pkt->pkt_status_ack.ip);
-		Serial.write(' ');
-
 		ser_printhex16(pkt->pkt_status_ack.buzzer);
 		Serial.write(' ');
 
@@ -253,11 +238,81 @@ void ser_printpkt(struct pktbuffer_s *pkt)
 		ser_printhex16(pkt->pkt_status_ack.eventmask);
 		break;
 
+	case 'V':
+		Serial.write(pkt->pkt_vmstatus.set_running ? (pkt->pkt_vmstatus.running ? 'y' : 'n') : 'z');
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.set_singlestep ? (pkt->pkt_vmstatus.singlestep ? 'y' : 'n') : 'z');
+		Serial.write(' ');
+		Serial.write(pkt->pkt_vmstatus.reset ? 'y' : 'n');
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.set_stacksize ? 'y' : 'n');
+		if (pkt->pkt_vmstatus.set_stacksize)
+			ser_printhex16(pkt->pkt_vmstatus.stacksize);
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.set_interrupt ? 'y' : 'n');
+		Serial.write(pkt->pkt_vmstatus.set_ip ? 'y' : 'n');
+		if (pkt->pkt_vmstatus.set_interrupt || pkt->pkt_vmstatus.set_ip)
+			ser_printhex16(pkt->pkt_vmstatus.ip);
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.set_sp ? 'y' : 'n');
+		if (pkt->pkt_vmstatus.set_sp)
+			ser_printhex16(pkt->pkt_vmstatus.sp);
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.set_sfp ? 'y' : 'n');
+		if (pkt->pkt_vmstatus.set_sfp)
+			ser_printhex16(pkt->pkt_vmstatus.sfp);
+		Serial.write(' ');
+
+		Serial.write(pkt->pkt_vmstatus.clear_error ? 'y' : 'n');
+		Serial.write(' ');
+		Serial.write(pkt->pkt_vmstatus.clear_suspend ? 'y' : 'n');
+
+		break;
+
+	case 'v':
+		Serial.write(pkt->pkt_vmstatus_ack.running ? 'y' : 'n');
+		Serial.write(' ');
+		Serial.write(pkt->pkt_vmstatus_ack.singlestep ? 'y' : 'n');
+		Serial.write(' ');
+		Serial.write(pkt->pkt_vmstatus_ack.suspended ? 'y' : 'n');
+		Serial.write(' ');
+		ser_printhex(pkt->pkt_vmstatus_ack.error);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_vmstatus_ack.stacksize);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_vmstatus_ack.ip);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_vmstatus_ack.sp);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_vmstatus_ack.sfp);
+		break;
+
 	case 'W':
+		ser_printhex(pkt->pkt_write.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_write.addr);
+		for (int i=0; i<pkt->pkt_write.length; ++i)
+			ser_printhex(pkt->pkt_write.data[i]);
+		break;
 	case 'w':
+		break;
 	case 'R':
+		ser_printhex(pkt->pkt_read.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_read.addr);
+		break;
 	case 'r':
-		/* TBD */
+		// this is actually a copy of 'W' with s/pkt_write/pkt_read_ack/g
+		ser_printhex(pkt->pkt_read_ack.length);
+		Serial.write(' ');
+		ser_printhex16(pkt->pkt_read_ack.addr);
+		for (int i=0; i<pkt->pkt_read_ack.length; ++i)
+			ser_printhex(pkt->pkt_read_ack.data[i]);
 		break;
 
 	case 'X':
@@ -371,6 +426,8 @@ void ser_poll()
 	case 'e':
 	case 'S':
 	case 's':
+        case 'V':
+        case 'v':
 	case 'W':
 	case 'w':
 	case 'R':
@@ -408,13 +465,6 @@ void ser_poll()
 		case 'S':
 			sendbuf_len += sizeof(sendbuf.pkt_status);
 
-			sendbuf.pkt_status.vm_stop = ser_readbool();
-			sendbuf.pkt_status.vm_start = ser_readbool();
-
-			sendbuf.pkt_status.set_ip = ser_readbool();
-			if (sendbuf.pkt_status.set_ip)
-				sendbuf.pkt_status.ip_val = ser_readhex16();
-
 			sendbuf.pkt_status.set_rgb = ser_readbool();
 			if (sendbuf.pkt_status.set_rgb) {
 				sendbuf.pkt_status.rgb_val[0] = ser_readhex();
@@ -442,8 +492,6 @@ void ser_poll()
 		case 's':
 			sendbuf_len += sizeof(sendbuf.pkt_status_ack);
 
-			sendbuf.pkt_status_ack.vm_running = ser_readbool();
-
 			sendbuf.pkt_status_ack.leds = 0;
 			for (int i = 0; i < 4; i++) {
 				if (ser_readbool())
@@ -456,18 +504,83 @@ void ser_poll()
 					sendbuf.pkt_status_ack.buttons |= (1 << i);
 			}
 
-			sendbuf.pkt_status_ack.ip = ser_readhex16();
 			sendbuf.pkt_status_ack.buzzer = ser_readhex16();
 			sendbuf.pkt_status_ack.rgb[0] = ser_readhex();
 			sendbuf.pkt_status_ack.rgb[1] = ser_readhex();
 			sendbuf.pkt_status_ack.rgb[2] = ser_readhex();
 			sendbuf.pkt_status_ack.eventmask = ser_readhex();
 			break;
+		case 'V':
+			sendbuf_len += sizeof(sendbuf.pkt_vmstatus);
+			{
+				int r = ser_readtri();
+				sendbuf.pkt_vmstatus.set_running = r != -1;
+				sendbuf.pkt_vmstatus.running = r;
+
+				r = ser_readtri();
+				sendbuf.pkt_vmstatus.set_singlestep = r != -1;
+				sendbuf.pkt_vmstatus.singlestep = r;
+			}
+
+			sendbuf.pkt_vmstatus.reset = ser_readbool();
+
+			sendbuf.pkt_vmstatus.set_stacksize = ser_readbool();
+			if (sendbuf.pkt_vmstatus.set_stacksize)
+				sendbuf.pkt_vmstatus.stacksize = ser_readhex16();
+
+			sendbuf.pkt_vmstatus.set_interrupt = ser_readbool();
+			sendbuf.pkt_vmstatus.set_ip = ser_readbool();
+			if (sendbuf.pkt_vmstatus.set_interrupt || sendbuf.pkt_vmstatus.set_ip)
+				sendbuf.pkt_vmstatus.ip = ser_readhex16();
+
+			sendbuf.pkt_vmstatus.set_sp = ser_readbool();
+			if (sendbuf.pkt_vmstatus.set_sp)
+				sendbuf.pkt_vmstatus.sp = ser_readhex16();
+
+			sendbuf.pkt_vmstatus.set_sfp = ser_readbool();
+			if (sendbuf.pkt_vmstatus.set_sfp)
+				sendbuf.pkt_vmstatus.sfp = ser_readhex16();
+
+			sendbuf.pkt_vmstatus.clear_error = ser_readbool();
+			sendbuf.pkt_vmstatus.clear_suspend = ser_readbool();
+			break;
+		case 'v':
+			sendbuf_len += sizeof(sendbuf.pkt_vmstatus_ack);
+			sendbuf.pkt_vmstatus_ack.running = ser_readbool();
+			sendbuf.pkt_vmstatus_ack.singlestep = ser_readbool();
+			sendbuf.pkt_vmstatus_ack.suspended = ser_readbool();
+			sendbuf.pkt_vmstatus_ack.error = ser_readhex();
+			sendbuf.pkt_vmstatus_ack.ip = ser_readhex16();
+			sendbuf.pkt_vmstatus_ack.sp = ser_readhex16();
+			sendbuf.pkt_vmstatus_ack.sfp = ser_readhex16();
+			break;
 		case 'W':
+			sendbuf.pkt_write.length = ser_readhex();
+			if (sendbuf.pkt_write.length > sizeof(sendbuf.pkt_write.data) / sizeof(*sendbuf.pkt_write.data))
+				goto parser_error;
+			sendbuf.pkt_write.addr = ser_readhex16();
+			for(int i = 0; i < sendbuf.pkt_write.length; ++i)
+				sendbuf.pkt_write.data[i] = ser_readhex();
+			sendbuf_len += sizeof(sendbuf.pkt_write) - 32 + sendbuf.pkt_write.length;
+			break;
 		case 'w':
+			break;
 		case 'R':
+			sendbuf.pkt_read.length = ser_readhex();
+			if (sendbuf.pkt_read.length > sizeof(sendbuf.pkt_read_ack.data) / sizeof(*sendbuf.pkt_read_ack.data))
+				goto parser_error;
+			sendbuf.pkt_read.addr = ser_readhex16();
+			sendbuf_len += sizeof(sendbuf.pkt_read);
+			break;
 		case 'r':
-			/* TBD */
+			// this is actually a copy of 'W' with s/pkt_write/pkt_read_ack/g
+			sendbuf.pkt_read_ack.length = ser_readhex();
+			if (sendbuf.pkt_read_ack.length > sizeof(sendbuf.pkt_read_ack.data) / sizeof(*sendbuf.pkt_read_ack.data))
+				goto parser_error;
+			sendbuf.pkt_read_ack.addr = ser_readhex16();
+			for(int i = 0; i < sendbuf.pkt_read_ack.length; ++i)
+				sendbuf.pkt_read_ack.data[i] = ser_readhex16();
+			sendbuf_len += sizeof(sendbuf.pkt_read_ack) - 32 + sendbuf.pkt_read_ack.length;
 			break;
 		case 'X':
 		case 'x':

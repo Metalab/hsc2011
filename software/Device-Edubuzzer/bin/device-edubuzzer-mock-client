@@ -1,0 +1,127 @@
+#!/usr/bin/env perl
+use perl5i::2;
+use strictures;
+use AnyEvent qw();
+use DBIx::Class::Schema::Loader qw();
+use Config::Any qw();
+use Const::Fast qw(const);
+use DateTime::HiRes qw();
+use Device::Edubuzzer::Util qw(free_port as_number as_bool as_utf8);
+use EV qw();
+use File::HomeDir qw();
+use FindBin::Real qw(RealDir);
+use HTTP::Status qw(HTTP_ACCEPTED HTTP_NO_CONTENT HTTP_OK);
+use Path::Class qw(file);
+use Plack::Request qw();
+use Plack::Runner qw();
+use Router::Resource qw(router resource missing GET POST PUT);
+
+exec $0, '--port='.free_port unless @ARGV ~~ /--port=\d+/;
+
+my $conf = (Config::Any->load_stems({
+    use_ext => 1,
+    stems   => [
+        file(RealDir, qw(.. etc device-edubuzzer))->resolve->stringify,
+        File::HomeDir->my_dist_config('Device-Edubuzzer', {create=>1})
+    ],
+}))->[0]->values->[0];
+
+my $data = $conf->{localstatedir} //
+    File::HomeDir->my_dist_data('Device-Edubuzzer', {create=>1});
+
+DBIx::Class::Schema::Loader->naming('current');
+DBIx::Class::Schema::Loader->use_namespaces(1);
+my $schema = DBIx::Class::Schema::Loader->connect(
+    'dbi:SQLite:dbname=/var/tmp/device-edubuzzer.sqlitedb',
+    q(),
+    q(),
+    {'AutoCommit' => 1, RaiseError => 1,},
+);
+my $rs_event = $schema->resultset('Event');
+
+my %events = (quit => AE::cv);
+const my @colours => qw(green red yellow blue);
+my %buttons = map {$_ => 0} @colours;
+my $event_logger = sub {
+};
+
+my $app = sub {
+    my ($env) = @_;
+    my $req = Plack::Request->new($env);
+    my $router = router {
+        for my $colour (@colours) {
+            resource "/button_$colour" => sub {
+                GET {
+                    return $req->new_response(
+                        HTTP_OK,
+                        [Content_Type => 'text/plain;charset=UTF-8'],
+                        $buttons{$colour}
+                    )->finalize;
+                };
+                POST {
+                    $buttons{$colour} = as_number(!$buttons{$colour});
+                    return $req->new_response(HTTP_NO_CONTENT, [], undef)->finalize;
+                };
+                PUT {
+                    $buttons{$colour} = as_number(as_bool($req->content));
+                    return $req->new_response(
+                        HTTP_OK,
+                        [Content_Type => 'text/plain;charset=UTF-8'],
+                        $buttons{$colour}
+                    )->finalize;
+                };
+            };
+        };
+        resource '/' => sub {
+            GET {
+                return $req->new_response(
+                    HTTP_OK,
+                    [Content_Type => 'application/xhtml+xml;charset=UTF-8'],
+                    file(RealDir, qw(.. share mock.xhtml))->resolve->openr
+                )->finalize;
+            };
+        };
+        resource '/destroy' => sub {
+            POST {
+                $events{exit_timer} = AE::timer 1, 0, sub { exit };
+                return $req->new_response(
+                    HTTP_ACCEPTED,
+                    [Content_Type => 'text/plain;charset=UTF-8'],
+                    as_utf8('☠')
+                )->finalize;
+            };
+        };
+        resource '/event-logger' => sub {
+            GET {
+                return $req->new_response(
+                    HTTP_OK,
+                    [Content_Type => 'text/plain;charset=UTF-8'],
+                    as_number(exists $events{event_logger})
+                )->finalize;
+            };
+            PUT {
+                if (as_bool($req->content)) {
+                    $events{event_logger} = AE::timer 0, 1, sub {
+                        $rs_event->create({
+                            timestamp => DateTime::HiRes->now->strftime('%FT%T.%3N%z'),
+                            mac => $req->uri->port,
+                            map {("button_$_" => $buttons{$_})} @colours
+                        });
+                    };
+                } else {
+                    delete $events{event_logger};
+                }
+                return $req->new_response(
+                    HTTP_OK,
+                    [Content_Type => 'text/plain;charset=UTF-8'],
+                    as_number(exists $events{event_logger})
+                )->finalize;
+            };
+        };
+    };
+    $router->dispatch($env);
+};
+
+my $runner = Plack::Runner->new;
+$runner->parse_options(@ARGV);
+$events{plack} = AE::idle { $runner->run($app) };
