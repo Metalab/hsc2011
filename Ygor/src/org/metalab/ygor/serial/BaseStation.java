@@ -1,9 +1,9 @@
 package org.metalab.ygor.serial;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
@@ -13,8 +13,8 @@ import org.metalab.ygor.serial.packet.Packet;
 
 public class BaseStation extends Service {
   private Process serialPipeProc;
-  private InputStream in;
-  private OutputStream out;
+  private BufferedInputStream in;
+  private BufferedOutputStream out;
 
   private Object rxmutex = new Object();
   private Object txmutex = new Object();
@@ -34,18 +34,16 @@ public class BaseStation extends Service {
     SerialProperties props = new SerialProperties(serialConf);
     info(props.toString());
 
-    String[] cmd = new String[] { 
-        "serialpipe", 
-        String.valueOf(props.getDevice()),
-        String.valueOf(props.getBaud()),
-        String.valueOf(props.getDatabits()), 
-        String.valueOf(props.getStopbits()),
-        String.valueOf(props.getParity())
-    };
+    String[] cmd = new String[] { "./serial-filter",
+        "--port=" + props.getPort(),
+        "--baud=" + props.getBaud(),
+        "--parity=" + props.getParity(), 
+        "--databits=" + props.getDatabits(), 
+        "--stopbits=" + props.getStopbits() };
 
     this.serialPipeProc = Runtime.getRuntime().exec(cmd);
-    this.in = serialPipeProc.getInputStream();
-    this.out = serialPipeProc.getOutputStream();
+    this.in = (BufferedInputStream)serialPipeProc.getInputStream();
+    this.out = (BufferedOutputStream)serialPipeProc.getOutputStream();
   }
 
   public void transmit(String s) throws IOException {

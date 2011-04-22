@@ -17,7 +17,7 @@ public class SerialProperties {
 	private int stopbits;
 	private int parity;
 	private int baud;
-	private String device;
+	private String port;
 
 	public SerialProperties(File conf) {
 		load(conf);
@@ -33,7 +33,7 @@ public class SerialProperties {
 
 			// validate properties file
 			try {
-				device = properties.get().getProperty("device");
+				port = properties.get().getProperty("device");
 				baud = Integer.parseInt(properties.get().getProperty("baud"));
 				databits = Integer.parseInt(properties.get().getProperty(
 						"databits"));
@@ -64,7 +64,7 @@ public class SerialProperties {
 
 	public void dump(Writer w) throws IOException {
 	  PrintWriter pw = new PrintWriter(w);
-	  pw.println("device=" + this.device);   
+	  pw.println("device=" + this.port);   
 	  pw.println("baud=" + this.baud);
     pw.println("databits=" + this.databits);
     pw.println("stopbits=" + this.stopbits);
@@ -96,8 +96,8 @@ public class SerialProperties {
 		return baud;
 	}
 
-	public String getDevice() {
-		return device;
+	public String getPort() {
+		return port;
 	}
 	
 	public int getParity() {
