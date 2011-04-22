@@ -31,12 +31,10 @@ public class YgorDB extends Service {
     }
     if (conf.b(YgorConfig.DB_ALLOW_CREATE)) {
       File dbFile = new File(getYgorConfig().s(YgorConfig.DB_URL).split("[:]")[2]);
-      try {
-        dbFile.delete();
-      } catch (Exception e) {
-        warn("Unable to delete db file: " + dbFile.getName(), e);
-      }
+      if(dbFile.exists())
+        throw new YgorException("db file already exists");
     }
+    
     try {
       this.connection = DriverManager.getConnection(conf.s(YgorConfig.DB_URL));
     } catch (SQLException e) {
