@@ -3,7 +3,10 @@ package org.metalab.ygor.serial;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
@@ -13,8 +16,8 @@ import org.metalab.ygor.serial.packet.Packet;
 
 public class BaseStation extends Service {
   private Process serialPipeProc;
-  private BufferedInputStream in;
-  private BufferedOutputStream out;
+  private FileInputStream in;
+  private FileOutputStream out;
 
   private Object rxmutex = new Object();
   private Object txmutex = new Object();
@@ -42,8 +45,12 @@ public class BaseStation extends Service {
         "--stopbits=" + props.getStopbits() };
 
     this.serialPipeProc = Runtime.getRuntime().exec(cmd);
-    this.in = (BufferedInputStream)serialPipeProc.getInputStream();
-    this.out = (BufferedOutputStream)serialPipeProc.getOutputStream();
+    try {
+      this.in = getDirectInputStream(this.serialPipeProc);
+      this.out = getDirectOutputStream(this.serialPipeProc);
+    } catch (Exception e) {
+      throw new IOException("Unable to obtain direct stream", e);
+    }
   }
 
   public void transmit(String s) throws IOException {
@@ -122,5 +129,34 @@ public class BaseStation extends Service {
     in = null;
     out = null;
     serialPipeProc = null;
+  }
+  
+  private static FileInputStream getDirectInputStream(Process p) throws IOException, NoSuchFieldException, IllegalAccessException {
+    BufferedInputStream bIn = (BufferedInputStream)p.getInputStream();
+    // indirectly mark the stream as closed by setting the internal buffer to null;
+    Field fBuf = bIn.getClass().getDeclaredField("buf");
+    fBuf.setAccessible(true);
+    fBuf.set(bIn, null);
+    // obtain the underlying stream and set it to null in the buffered stream just to be sure it won't be accessed anymore
+    Field fDirectIn = bIn.getClass().getSuperclass().getDeclaredField("in");
+    fDirectIn.setAccessible(true);
+    FileInputStream fIn =  (FileInputStream) fDirectIn.get(bIn);
+    fDirectIn.set(bIn, null);
+    return fIn;
+  }
+  
+  private static FileOutputStream getDirectOutputStream(Process p) throws IOException, NoSuchFieldException, IllegalAccessException {
+    BufferedOutputStream bOut = (BufferedOutputStream)p.getOutputStream();
+    // indirectly mark the stream as closed by setting the internal buffer to null;
+    Field fBuf = bOut.getClass().getDeclaredField("buf");
+    fBuf.setAccessible(true);
+    fBuf.set(bOut, null);
+
+    // obtain the underlying stream and set it to null in the buffered stream just to be sure it won't be accessed anymore
+    Field fDirectOut = bOut.getClass().getSuperclass().getDeclaredField("out");
+    fDirectOut.setAccessible(true);
+    FileOutputStream fOut = (FileOutputStream) fDirectOut.get(bOut);
+    fDirectOut.set(bOut, null);
+    return fOut;
   }
 }
