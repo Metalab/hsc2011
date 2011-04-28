@@ -9,6 +9,7 @@ import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.db.YgorQuery;
 import org.metalab.ygor.serial.packet.Packet.PacketType;
+import org.metalab.ygor.serial.packet.Payload.TriState;
 import org.metalab.ygor.util.ParameterMap;
 
 public class Dispatcher extends Service {
@@ -61,6 +62,7 @@ public class Dispatcher extends Service {
         
       case PKTT_STATUS:
       case PKTT_VMSTATUS:
+        YgorDaemon.baseStation().transmit(pkt);
         break;
 
       case PKTT_STATUS_ACK:
@@ -143,7 +145,13 @@ public class Dispatcher extends Service {
           if (pkt != null)
             dispatch(pkt);
         } catch (Exception e) {
-          warn("receive error", e);
+          if(YgorDaemon.baseStation().isRunning())
+            warn("receive error", e);
+          else {
+            error("BaseStation terminated", e);
+            YgorDaemon.shutdown();
+            break;
+          }
         }
       }
     }
@@ -160,14 +168,23 @@ public class Dispatcher extends Service {
     public void run() {
       while(Dispatcher.this.isRunning()) {
         try {
-          ResultSet rs = (ResultSet) lsAccepted().getResult();
-          
-          while (rs != null && rs.next()) {
-            Packet ack = Packet.createFromResultSet(PacketType.PKTT_LOGIN_ACK, rs);
-            dispatch(ack);
-            ackLogin(ack);
+          synchronized (this) {
+            ResultSet rs = (ResultSet) lsAccepted().getResult();
+
+            while (rs != null && rs.next()) {
+              Packet login = Packet.createFromResultSet(PacketType.PKTT_LOGIN,
+                  rs);
+              Packet ack = login
+                  .createResponse(PacketType.PKTT_LOGIN_ACK, null);
+              Packet enable = login.createResponse(PacketType.PKTT_STATUS,
+                  new Status((short[]) null, -1, TriState.keep, TriState.keep,
+                      TriState.keep, TriState.keep, (short) 255, (short) 255));
+              dispatch(ack);
+              ackLogin(login);
+              dispatch(enable);
+            }
+            sleep(interval);
           }
-          sleep(interval);
         } catch (Exception e) {
           error("Resending failed", e);
         }
