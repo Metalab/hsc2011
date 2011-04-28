@@ -1,0 +1,10 @@
+Run `make -n` to see where things are going to be installed. Tweak the target
+directories with the environment variables `PROJECT` and `WWWDIR`.
+
+Run `make` to install.
+
+configure/build/install time requirements: GNU make and coreutils
+
+run-time requirements: a webserver (example configuration for Apache httpd 2.2
+is in the `etc` directory), a sensible graphical browser with JavaScript
+(tested with Firefox 4 only so far, targetting Chromium 12 and Opera 11 later)
