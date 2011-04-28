@@ -1,0 +1,4 @@
+`device-edubuzzer-mock-middleware` is an Ygor-workalike. Put data in the 
+request body, and they echo back in the response.
+
+    curl -v -X GET -d "{'I am':'JSON'}" 'http://localhost:8348/ygor?name=ls_events.sql&rowid=foo'

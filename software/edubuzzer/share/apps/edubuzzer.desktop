@@ -1,0 +1,6 @@
+[Desktop Entry]
+Encoding=UTF-8
+Exec='firefox http://edubuzzer'
+Icon=edubuzzer
+Name=Edubuzzer
+Type=Application
