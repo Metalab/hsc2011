@@ -35,6 +35,7 @@ public class BuzzerClient extends JFrame {
     getContentPane().setLayout(new FlowLayout());
     loginTable = new LoginTable();
     actions = new BuzzerActions(host,port,loginTable);
+    actions.initBaseStation();
     JScrollPane pane = new JScrollPane(loginTable);
     getContentPane().add(pane);
     getContentPane().add(new JButton(getBuzzerActions().new AcceptLogin()));
