@@ -31,11 +31,11 @@ public class Payload {
     }
   }
   
-  public final static String toHexByteString(int i, int byteIndex) {
-    return Integer.toHexString(0xff & (i >> (8 * byteIndex))).substring(24);
+  public final static String toHexByteString(int i, int byteIndex, int len) {
+    return Integer.toHexString(0xff & (i >> (8 * byteIndex))).substring(0,len);
   }
   
-  public final static String toHexByteString(int i) {
-    return Integer.toHexString(i).substring(24);
+  public final static String toHexByteString(int i, int len) {
+    return Integer.toHexString(i).substring(0,len);
   }
 }

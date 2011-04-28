@@ -4,10 +4,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class Status extends Payload {
-  boolean set_rgb = false;
+  TriState set_rgb = TriState.no;
   short[] rgb = null;
   
-  boolean set_buzzer = false;
+  TriState set_buzzer = TriState.no;
   int buzzer = 0;
 
   TriState led0 = null;
@@ -20,12 +20,12 @@ public class Status extends Payload {
   
   public Status(short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
     if(rgb != null) {
-      this.set_rgb = true;
+      this.set_rgb = TriState.yes;
       this.rgb = rgb;
     }
     
     if(buzzer > 0) {
-      this.set_buzzer = true;
+      this.set_buzzer = TriState.yes;
       this.buzzer = buzzer;
     }
     
@@ -42,8 +42,8 @@ public class Status extends Payload {
     String[] tokens = s.split("\\s");
     int i = 0;
 
-    set_rgb = Boolean.parseBoolean(tokens[i++]);
-    if(set_rgb) {
+    set_rgb = TriState.parse(tokens[i++]);
+    if(set_rgb == TriState.yes) {
       rgb = new short[3];
       
       String rgbhex = tokens[i++];
@@ -52,8 +52,8 @@ public class Status extends Payload {
       rgb[2] = Short.parseShort(rgbhex.substring(4,6), 16);
     }
     
-    set_buzzer = Boolean.parseBoolean(tokens[i++]);
-    if(set_buzzer) {
+    set_buzzer = TriState.parse(tokens[i++]);
+    if(set_buzzer == TriState.yes) {
       String buzzerHex = tokens[i++];
       short lower = Short.parseShort(buzzerHex.substring(2,4), 16);
       short higher = Short.parseShort(buzzerHex.substring(0,2), 16);
@@ -66,9 +66,8 @@ public class Status extends Payload {
     led2 = TriState.parse(tokens[i++]);
     led3 = TriState.parse(tokens[i++]);
     
-    String eventHex = tokens[i++];
-    eventmask = Short.parseShort(eventHex.substring(0,2), 16);
-    eventmaskmask = Short.parseShort(eventHex.substring(2,4), 16);
+    eventmask = Short.parseShort(tokens[i++],16);
+    eventmaskmask = Short.parseShort(tokens[i++],16);
   }
   
   public String toString() {
@@ -78,22 +77,22 @@ public class Status extends Payload {
     pw.print(set_rgb);
     pw.print(DELIM);
     
-    if(set_rgb) {
-      pw.print(toHexByteString(rgb[0]));
+    if(set_rgb == TriState.yes) {
+      pw.print(toHexByteString(rgb[0],2));
       pw.print(DELIM);
-      pw.print(toHexByteString(rgb[1]));
+      pw.print(toHexByteString(rgb[1],2));
       pw.print(DELIM);
-      pw.print(toHexByteString(rgb[2]));
+      pw.print(toHexByteString(rgb[2],2));
       pw.print(DELIM);
     }
     
     pw.print(set_buzzer);
     pw.print(DELIM);
     
-    if(set_buzzer) {
-      pw.print(toHexByteString(buzzer));
+    if(set_buzzer == TriState.yes) {
+      pw.print(toHexByteString(buzzer, 4));
       pw.print(DELIM);
-      pw.print(toHexByteString(buzzer, 1));
+      pw.print(toHexByteString(buzzer, 4));
       pw.print(DELIM);
     }
     
@@ -106,9 +105,9 @@ public class Status extends Payload {
     pw.print(led3);
     pw.print(DELIM);
     
-    pw.print(toHexByteString(eventmask));
+    pw.print(toHexByteString(eventmask,2));
     pw.print(DELIM);
-    pw.print(toHexByteString(eventmaskmask));
+    pw.print(toHexByteString(eventmaskmask,2));
     pw.print(DELIM);
     
     return sw.toString();

@@ -94,20 +94,20 @@ public class VMStatus extends Payload {
     pw.print(set_interrupt); pw.print(DELIM);
     pw.print(set_ip); pw.print(DELIM);
     if(set_interrupt || set_ip) {
-      pw.print(toHexByteString(ip[0]));
-      pw.print(toHexByteString(ip[1]));
+      pw.print(toHexByteString(ip[0],4));
+      pw.print(toHexByteString(ip[1],4));
     }
 
     pw.print(set_sp); pw.print(DELIM);
     if(set_sp) {
-      pw.print(toHexByteString(sp[0]));
-      pw.print(toHexByteString(sp[1]));
+      pw.print(toHexByteString(sp[0],4));
+      pw.print(toHexByteString(sp[1],4));
     }
 
     pw.print(set_sfp); pw.print(DELIM);
     if(set_sfp) {
-      pw.print(toHexByteString(sfp[0]));
-      pw.print(toHexByteString(sfp[1]));
+      pw.print(toHexByteString(sfp[0],4));
+      pw.print(toHexByteString(sfp[1],4));
     }
 
     pw.print(clear_error); pw.print(DELIM);

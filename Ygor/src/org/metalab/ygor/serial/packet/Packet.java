@@ -108,6 +108,9 @@ public class Packet implements ParameterMap {
       
     case PKTT_EVENT:
       return new Event(payload);
+      
+    case PKTT_STATUS:
+      return new Status(payload);
     default:
       throw new YgorException("Unknown packet type");
     }
@@ -167,7 +170,7 @@ public class Packet implements ParameterMap {
 	  String payloadString = null;
 	  if(payload != null)
 	    payloadString = payload.toString();
-	  return new Packet(p_type, seqnum, src, dest, payloadString);
+	  return new Packet(p_type, seqnum, dest, src, payloadString);
 	}
 	
 	public static Packet createFromResultSet(PacketType p_type, ResultSet rs) throws SQLException {
