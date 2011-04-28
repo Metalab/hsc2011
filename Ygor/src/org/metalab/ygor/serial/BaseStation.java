@@ -1,12 +1,8 @@
 package org.metalab.ygor.serial;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
@@ -15,9 +11,9 @@ import org.metalab.ygor.serial.packet.Dispatcher;
 import org.metalab.ygor.serial.packet.Packet;
 
 public class BaseStation extends Service {
-  private Process serialPipeProc;
-  private FileInputStream in;
-  private FileOutputStream out;
+  private SerialPipeProcess serialPipeProc;
+  private InputStream in;
+  private OutputStream out;
 
   private Object rxmutex = new Object();
   private Object txmutex = new Object();
@@ -33,29 +29,22 @@ public class BaseStation extends Service {
   }
 
   private void init() throws IOException {
-    File serialConf = getYgorConfig().f(YgorConfig.SERIAL_CONF);
-    SerialProperties props = new SerialProperties(serialConf);
-    info(props.toString());
-
-    String[] cmd = new String[] { "./serial-filter",
-        "--port=" + props.getPort(),
-        "--baud=" + props.getBaud(),
-        "--parity=" + props.getParity(), 
-        "--databits=" + props.getDatabits(), 
-        "--stopbits=" + props.getStopbits() };
-
-    this.serialPipeProc = Runtime.getRuntime().exec(cmd);
-    try {
-      this.in = getDirectInputStream(this.serialPipeProc);
-      this.out = getDirectOutputStream(this.serialPipeProc);
-    } catch (Exception e) {
-      throw new IOException("Unable to obtain direct stream", e);
-    }
+    serialPipeProc = new SerialPipeProcess(getYgorConfig());
+    this.in = serialPipeProc.getInputStream();
+    this.out = serialPipeProc.getOutputStream();
+    
+    serialPipeProc.addExitHook(new Runnable() {
+      public void run() {
+        if(BaseStation.this.isRunning())
+          BaseStation.this.halt();
+      }
+    });
   }
 
   public void transmit(String s) throws IOException {
     synchronized (txmutex) {
       debug("TX: " + s);
+      
       out.write(s.getBytes());
       out.write('\n');
     }
@@ -67,24 +56,23 @@ public class BaseStation extends Service {
     }
   }
 
-  public Packet receive() {
+  public Packet receive() throws IOException {
     synchronized (rxmutex) {
       StringBuilder sb = new StringBuilder();
-      try {
-        int d;
 
-        while (((d = in.read()) != -1 && d != '\n') || sb.length() == 0)
-          sb.append((char) d);
+      int d;
 
-        String s = sb.toString();
-        
-        debug("RX: " + s);
-        if(!s.trim().startsWith("*") && !s.startsWith("-") && !s.startsWith("user")) {
-          return Packet.parsePacket(s);
-        }
-      } catch (Exception e) {
-        warn("Unparseable message detected: " + sb, e);
+      while (((d = in.read()) != -1 && d != '\n'))
+        sb.append((char) d);
+
+      String s = sb.toString();
+
+      debug("RX: " + s);
+      if (!s.trim().startsWith("*") && !s.startsWith("-")
+          && !s.startsWith("user") && !(s.trim().length() == 0)) {
+        return Packet.parsePacket(s);
       }
+
       return null;
     }
   }
@@ -126,37 +114,15 @@ public class BaseStation extends Service {
       warn("Unable to close port", e);
     }
 
+    try {
+      if (dispatcher != null)
+        dispatcher.halt();
+    } catch (Exception e) {
+      warn("Unable to halt dispatcher", e);
+    }
     in = null;
     out = null;
     serialPipeProc = null;
-  }
-  
-  private static FileInputStream getDirectInputStream(Process p) throws IOException, NoSuchFieldException, IllegalAccessException {
-    BufferedInputStream bIn = (BufferedInputStream)p.getInputStream();
-    // indirectly mark the stream as closed by setting the internal buffer to null;
-    Field fBuf = bIn.getClass().getDeclaredField("buf");
-    fBuf.setAccessible(true);
-    fBuf.set(bIn, null);
-    // obtain the underlying stream and set it to null in the buffered stream just to be sure it won't be accessed anymore
-    Field fDirectIn = bIn.getClass().getSuperclass().getDeclaredField("in");
-    fDirectIn.setAccessible(true);
-    FileInputStream fIn =  (FileInputStream) fDirectIn.get(bIn);
-    fDirectIn.set(bIn, null);
-    return fIn;
-  }
-  
-  private static FileOutputStream getDirectOutputStream(Process p) throws IOException, NoSuchFieldException, IllegalAccessException {
-    BufferedOutputStream bOut = (BufferedOutputStream)p.getOutputStream();
-    // indirectly mark the stream as closed by setting the internal buffer to null;
-    Field fBuf = bOut.getClass().getDeclaredField("buf");
-    fBuf.setAccessible(true);
-    fBuf.set(bOut, null);
-
-    // obtain the underlying stream and set it to null in the buffered stream just to be sure it won't be accessed anymore
-    Field fDirectOut = bOut.getClass().getSuperclass().getDeclaredField("out");
-    fDirectOut.setAccessible(true);
-    FileOutputStream fOut = (FileOutputStream) fDirectOut.get(bOut);
-    fDirectOut.set(bOut, null);
-    return fOut;
+    dispatcher = null;
   }
 }

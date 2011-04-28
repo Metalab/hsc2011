@@ -1,0 +1,1 @@
+socat - /dev/ttyUSB0,raw,echo=0,crnl,b57600

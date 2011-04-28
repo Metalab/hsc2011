@@ -18,7 +18,8 @@ public class SerialProperties {
 	private int parity;
 	private int baud;
 	private String port;
-
+	private String[] cmd;
+	
 	public SerialProperties(File conf) {
 		load(conf);
 	}
@@ -33,6 +34,7 @@ public class SerialProperties {
 
 			// validate properties file
 			try {
+				cmd = properties.get().getProperty("cmd").split("\\s");
 				port = properties.get().getProperty("device");
 				baud = Integer.parseInt(properties.get().getProperty("baud"));
 				databits = Integer.parseInt(properties.get().getProperty(
@@ -102,5 +104,9 @@ public class SerialProperties {
 	
 	public int getParity() {
 	  return parity;
+	}
+	
+	public String[] getExternalCommand() {
+		return cmd;
 	}
 }

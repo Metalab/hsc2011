@@ -18,13 +18,7 @@ public class BaseStationServlet extends YgorServlet {
   protected void process(YgorRequest query, OutputStream out) {
     String cmd = query.value("cmd");
     try {
-      if (cmd == "accept_login") {
-        dispatcher.acceptLogin(query).writeJson(out);
-      } else if (cmd == "vm_status") {
-        dispatcher.queueVMStatus(query).writeJson(out);
-      } else {
         YgorDaemon.baseStation().transmit(cmd);
-      }
     } catch (Exception e) {
       throw new YgorException("Unable to execute controller command: " + cmd, e);
     }
