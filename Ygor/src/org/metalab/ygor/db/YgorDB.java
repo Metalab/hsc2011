@@ -32,7 +32,7 @@ public class YgorDB extends Service {
     if (conf.b(YgorConfig.DB_ALLOW_CREATE)) {
       File dbFile = new File(getYgorConfig().s(YgorConfig.DB_URL).split("[:]")[2]);
       if(dbFile.exists())
-        throw new YgorException("db file already exists");
+        dbFile.delete();
     }
     
     try {
