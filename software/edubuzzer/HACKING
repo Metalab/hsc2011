@@ -5,9 +5,11 @@ architectural overview
 ----------------------
 
 Each Edubuzzer app, e.g. *Raise Your Hands*, is chiefly implemented in a
-single responsible JavaScript file, e.g. `raise-your-hands.js`. Each one has
-a function with a fixed name, `Edubuzzer.display`. 
-(**TODO**: more sensible name?)
+single responsible JavaScript file, e.g. `raise-your-hands.js`. Each one can
+define callbacks, for example `Edubuzzer.updated_known_logins` which is called
+whenever a client is added or removed, or `Edubuzzer.display`, which gets
+called in regular intervals. (**TODO**: provide callback hooks for all events
+that can occur.)
 
 `global.js` runs a poor man's event loop and periodically calls the fixed 
 function for the currently active app. An app is activated by changing the
