@@ -1,11 +1,19 @@
 var Edubuzzer = {
+    middleware_endpoint: 'http://edubuzzer:8348/ygor',
     main_loop_interval: 700,
     registered_apps: {'home': true, 'raise-your-hands': true, 'voting': true},
     display: function() { /*dummy*/ },
-    poll_num_connected_buzzers: function() {
-        return 20;
-    }
 };
+Edubuzzer.poll_num_connected_buzzers = function() {
+    var count;
+    $.getJSON(
+        Edubuzzer.middleware_endpoint+'?name=ls_accepted_login.sql',
+        function (accepted_logins) {
+            count = accepted_logins.length
+        }
+    )
+    return count;
+}
 
 $(document).ready(function() {
     window.onhashchange = function() {
