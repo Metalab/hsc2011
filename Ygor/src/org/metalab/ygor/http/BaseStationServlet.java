@@ -23,6 +23,4 @@ public class BaseStationServlet extends YgorServlet {
       throw new YgorException("Unable to execute controller command: " + cmd, e);
     }
   }
-
-
 }

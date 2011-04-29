@@ -1,2 +1,3 @@
 /ygor org.metalab.ygor.http.QueryServlet
 /base org.metalab.ygor.http.BaseStationServlet
+/echo org.metalab.ygor.http.EchoServlet
