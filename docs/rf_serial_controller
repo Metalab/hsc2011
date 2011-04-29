@@ -5,6 +5,9 @@ Note that every arrow going from left to right in the sqlite column is really
 the unexpected (typically non-empty) result of the application polling, while
 expected (typically empty) results of polling are not shown.
 
+The resend_hardwarechanges / pop_hardwarechanges part can be ignored as long as
+ygor uses only nullpipe or a configured serial pipe.
+
 Both devices start powerless
 
 
@@ -14,14 +17,17 @@ Both devices start powerless
                                                                                          is connected yet)                                             all the state he keeps, which just the list
                                                                                                                                                               of connected devices)
 
+                                                                                        (noting to do as no      <---- resend_hardwarechanges() ---
+                                                                                       serial device known yet)
+
            (power on)
                           ----- L ----->
             (waits)
                           ----- L ----->
             (waits)                              (power on)   -- (platform dep.) -->
-                                                                                        (detect new serial)
-                                                                <----- M05 -----
-                                                (now in base
+                                                                                        (detect new serial)        --- pop_hardwarechanges(): ["found", B] --->  (remove the "please connect the device"
+                                                                <----- M05 -----                                                                                 message, note that we can address the
+                                                (now in base                                                                                                           device at the USB as B)
                                                 station mode)
                           ----- L ----->         (pass on)       ----- L ----->         (added to list of
             (waits)                                                                     candidate devices)        --- ls_pending_login: [A] --->
