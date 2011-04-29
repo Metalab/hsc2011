@@ -17,7 +17,7 @@ public class YgorQuery {
   private final static char openObj = '{';
   private final static char closeObj = '}';
   private final static char tick = '"';
-  private final static String delimVal = "\" = \"";
+  private final static String delimVal = "\":\"";
   private final static char delimObj = ',';
   
   private int columnCount;
@@ -106,9 +106,13 @@ public class YgorQuery {
 
   public void writeJson(PrintStream out) throws SQLException {
     out.print(openArray);
+    boolean first = true;
     while(isOpen()) {
+      if(first)
+        first = false;
+      else
+        out.print(delimObj);  
       writeNextRow(out);
-      out.print(delimObj);
     }
     out.print(closeArray);
     
