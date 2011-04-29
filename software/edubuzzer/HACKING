@@ -1,0 +1,74 @@
+notes for Edubuzzer apps authors
+================================
+
+architectural overview
+----------------------
+
+Each Edubuzzer app, e.g. *Raise Your Hands*, is chiefly implemented in a
+single responsible JavaScript file, e.g. `raise-your-hands.js`. Each one has
+a function with a fixed name, `Edubuzzer.display`. 
+(**TODO**: more sensible name?)
+
+`global.js` runs a poor man's event loop and periodically calls the fixed 
+function for the currently active app. An app is activated by changing the
+URI `#hash`. The skeleton switches to an app by simply overwriting the 
+`display` function.
+
+querying buzzers
+----------------
+
+`/ygor` is the base URI for the middleware endpoint. Send `GET` request to
+certain named queries, e.g. `?name=ls_accepted_login.sql`. For the full list,
+see directory `Ygor/sql/`. It returns a JSON array of objects/hashes whose
+keys are described in the SQL file, e.g. for above:
+    
+    [{"rowid":42,"src":"BUZZER-DEVICE-ID","dest":"MASTER-DEVICE-ID",
+        "seqnum":23,"ibutton":"SOMETHING","since":"TIMESTAMP",
+        "accepted":true,"ack":false}, … ]
+
+Refer to the table schemas in `Ygor/schema/` for explicit key/row names. Rely
+on `src` for identifying a buzzer. 
+
+The most important query is `ls_events.sql` because it deals with the device
+buttons. The first line in the file hints at the additional query parameters,
+in this case `loginid`, i.e. the full query string is 
+`?name=ls_events&loginid=ROWID` where ROWID is a number received in earlier 
+different queries. Extract the button status from the `eventmask` field. See 
+`docs/serialprotocol` for the semantics.
+
+For debugging purposes the middleware exposes an echo interface at base URI
+`/echo`. The query string is ignored except for the parameter name 
+`Response-Body`. Its value is a percent encoded JSON string which 
+unsurprisingly is returned as response body.
+
+For example, you want to mock:
+
+    $.getJSON(
+        Edubuzzer.middleware_endpoint+'?name=…',
+        function (foo) {
+            …
+        }
+    )
+
+Add a [second parameter to the `getJSON` 
+call](http://api.jquery.com/jQuery.getJSON/), thus:
+
+    $.getJSON(
+        Edubuzzer.middleware_mock_endpoint+'?name=…',
+        'Response-Body'+encodeURIComponent('[{"rowid":123}]')
+        function (foo) {
+            …
+        }
+    )
+
+instruction list
+----------------
+
+* decide on an app name (e.g. `exampleapp`)
+* create a new JavaScript file with the name
+* implement the `display` function
+    - present the app UI in element `#buzzers`
+    - keep internal data under the `Edubuzzer.exampleapp` namespace
+* add the app name/link in `index.xhtml`
+* register the app in `global.js`
+* add styles in `edubuzzer.css`
