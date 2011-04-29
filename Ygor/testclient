@@ -1,2 +1,2 @@
-java -cp bin/ org.metalab.ygor.test.BuzzerClient localhost 8348
+java -cp "lib/json_org.jar:bin/" org.metalab.ygor.test.BuzzerClient localhost 8348
 
