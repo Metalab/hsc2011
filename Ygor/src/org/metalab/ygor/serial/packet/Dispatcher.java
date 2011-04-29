@@ -139,7 +139,7 @@ public class Dispatcher extends Service {
     
     public void run() {
       Packet pkt;
-      while (true) {
+      while (Dispatcher.this.isRunning()) {
         try {
           pkt = YgorDaemon.baseStation().receive();
           if (pkt != null)

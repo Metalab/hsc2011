@@ -48,8 +48,6 @@ public class YgorDaemon extends Service {
 		web = null;
 		db = null;
 		serial = null;
-		
-		System.exit(0);
 	}
 
 	public static void shutdown() {
