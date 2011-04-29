@@ -1,10 +1,18 @@
 This illustrates typical communication between a base station and a buzzer, and
 how the base station and the controller (PC side) see it.
 
+Note that every arrow going from left to right in the sqlite column is really
+the unexpected (typically non-empty) result of the application polling, while
+expected (typically empty) results of polling are not shown.
+
 Both devices start powerless
 
 
-           BUZZER "A"         rf comm.              BASE              serial comm.          CONTROLLER            web socket?          APPLICATION
+           BUZZER "A"         rf comm.              BASE              serial comm.             YGOR                           sqlite                                APPLICATION
+
+                                                                                        (noting to do as nobody  <---- resend_connectionchanges() ---    (we've lost all state, make ygor send
+                                                                                         is connected yet)                                             all the state he keeps, which just the list
+                                                                                                                                                              of connected devices)
 
            (power on)
                           ----- L ----->
@@ -16,41 +24,48 @@ Both devices start powerless
                                                 (now in base
                                                 station mode)
                           ----- L ----->         (pass on)       ----- L ----->         (added to list of
-            (waits)                                                                     candidate devices)    --- new cand. "A" --->
-                                                                                                                                        (thinks)
+            (waits)                                                                     candidate devices)        --- ls_pending_login: [A] --->
+                                                                                                                                                                     (thinks)
                           ----- L ----->                         ----- L ----->         (drop, waiting for
             (waits)                                                                     decisiion by app)
-                                                                                                             <--- accept cand. "A" ---
+                                                                                                                   <--- accept_login(src="A") ---
                           ----- L ----->                         ----- L ----->
                                                                                          (found in list)
-                         <----- l -----                         <----- l -----
+                         <----- l -----                         <----- l -----                               --- pop_connectionchanges(): [A, "connected"] -->  (display device as connected)
 
 
-                                                                                                                                       (gets user interaction,
-                                                                                                                                       wants leds active and
-                                                                                                                                       event mask configured)
-                    (package loss) X---                         <----- S -----          (add to send queue)     <----- S -----
-
+                                                                                                                                                                 (gets user interaction,
+                                                                                                                                                                 wants leds active and
+                                                                                                                                                                 event mask configured)
+               
+                    (package loss) X---                         <----- S -----          (add to send queue)     <----- send_S(dst="A", payload="nnyy...", handle=42)  -----
                          <----- S -----                         <----- S -----        (resend timeout reached)
   (leds on, set ev-mask)
-                          ----- s ----->                         ----- s ----->         (remove from queue)      ----- s ----->       (don't care, maybe display readiness)
+                          ----- s ----->                         ----- s ----->         (remove from queue,      ----- pop_s(): [A, payload, 42] ----->       (don't care, maybe display readiness)
+                                                                                      round-trip handle from
+                                                                                           queued line)
 
 
 
      (button pressed)     ----- E -X (lost)
    (busy waiting for ack)
      (retransmit timeout) ----- E ----->
-                         <----- e -----      (auto-acking)       ----- E ----->                                   ----- E ----->       (registered)
+                         <----- e -----      (auto-acking)       ----- E ----->                                   ----- pop_E(): [A, payload] ----->                 (note taken)
 
 
 
       (gets out of range)
 
 
-                         (lost) X-----                           <----- S -----             (add to queue)       <----- S -----         (game over, leds off)
+                         (lost) X-----                           <----- S -----             (add to queue)           <----- send_S(...) -----                  (game over, leds off)
+
+                                                                                   (if it was not for the just sent
+                                                                                    S, ygor would soon have sent a
+                                                                                         keepalive S anyway)
+
                          (lost) X-----                           <----- S -----                (resend)
                          (lost) X-----                           <----- S -----                (resend)
-                                                                                          (resent too often)    --- device "A" lost -->   (complain or whatever)
+                                                                                          (resent too often)    ---- pop_connectionchanges(): [A, "disconnected"] ---> (complain or whatever)
 
      (gets back into range)
 
