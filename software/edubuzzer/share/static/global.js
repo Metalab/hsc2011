@@ -20,16 +20,18 @@ $(document).ready(function() {
             $('#buzzers').empty();
             $('#post-buzzers').empty();
 
-            // clear callbacks, in case an application does not implement all
-            Edubuzzer.display = function() {};
-            Edubuzzer.updated_known_logins = function() {};
+            // clear callbacks
+            Edubuzzer.run_application = function() {console.warn("Application does not implement a main routine at all.");}
+            Edubuzzer.display = function() {console.log("Ignoring display events while loading.");};
+            Edubuzzer.updated_known_logins = function() {console.log("Ignoring updated_known_logins events while loading.");};
 
-            var elem = document.createElement('script') /* load new app */
-            elem.type = 'application/javascript';
-            elem.src = hash+'.js'
-            $('head').append(elem)
-
-            Edubuzzer.updated_known_logins();
+            $.getScript(hash+'.js', function() {
+                    console.log("should be ready now");
+                    Edubuzzer.display = function() {console.log("Application does not implement 'display' callback.");};
+                    Edubuzzer.updated_known_logins = function() {console.log("Application does not implement 'updated_known_logins' callback.");};
+                    Edubuzzer.run_application();
+                    Edubuzzer.updated_known_logins();
+            });
         }
     }
 

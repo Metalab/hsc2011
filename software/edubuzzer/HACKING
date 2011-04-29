@@ -6,15 +6,17 @@ architectural overview
 
 Each Edubuzzer app, e.g. *Raise Your Hands*, is chiefly implemented in a
 single responsible JavaScript file, e.g. `raise-your-hands.js`. Each one can
-define callbacks, for example `Edubuzzer.updated_known_logins` which is called
-whenever a client is added or removed, or `Edubuzzer.display`, which gets
-called in regular intervals. (**TODO**: provide callback hooks for all events
-that can occur.)
+defines a single callback, `Edubuzzer.run_application`, which is called when
+the application gets started.
 
-`global.js` runs a poor man's event loop and periodically calls the fixed 
-function for the currently active app. An app is activated by changing the
-URI `#hash`. The skeleton switches to an app by simply overwriting the 
-`display` function.
+Inside `Edubuzzer.run_application`, it may register other callbacks like
+`Edubuzzer.updated_known_logins` (which gets called whenever a client is added
+or removed), or `Edubuzzer.display` (which gets called in regular intervals).
+
+`global.js` runs a poor man's event loop and schedules all pollings to the
+server which result in callbacks the active app registered being called.  An
+app is activated by changing the URI `#hash`. The skeleton switches to an app
+by simply overwriting the `display` function.
 
 querying buzzers
 ----------------
@@ -68,7 +70,7 @@ instruction list
 
 * decide on an app name (e.g. `exampleapp`)
 * create a new JavaScript file with the name
-* implement the `display` function
+* implement the `run_application` function and the hooks you need
     - present the app UI in element `#buzzers`
     - keep internal data under the `Edubuzzer.exampleapp` namespace
 * add the app name/link in `index.xhtml`
