@@ -8,7 +8,7 @@ public class LoginTable extends JTable {
     setVisible(true);
   }
   
-   public String getSelectedRowID() {
+   public String getSelectedSrc() {
     return getModel().getValueAt(getSelectedRow(), 0).toString();
   }
 }

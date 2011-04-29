@@ -32,7 +32,7 @@ public class BuzzerActions {
     }
     
     public void actionPerformed(ActionEvent e) {
-      ygorFetch("accept_login.sql", lt.getSelectedRowID());
+      ygorFetchBySrc("accept_login.sql", lt.getSelectedSrc());
     }
   }
 
@@ -40,12 +40,18 @@ public class BuzzerActions {
     return this.ygorFetch(name, (HashMap<String, String>) null);
   }
   
-  public JSONArray ygorFetch(String name, String rowid) {
+  public JSONArray ygorFetchBySrc(String name, String src) {
+    HashMap<String, String> params = new HashMap<String, String>();
+    params.put("src", src);
+    return this.ygorFetch(name, params);
+  }
+  
+  public JSONArray ygorFetchByRowID(String name, String rowid) {
     HashMap<String, String> params = new HashMap<String, String>();
     params.put("rowid", rowid);
     return this.ygorFetch(name, params);
   }
-  
+
   public JSONArray ygorFetch(String name, HashMap<String, String> params) {
     InputStream in = null;
     try {
