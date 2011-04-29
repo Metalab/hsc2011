@@ -1,2 +1,2 @@
--- rowid
-delete from EVENTS where ROWID=?
+-- src
+delete from EVENTS where SRC=?

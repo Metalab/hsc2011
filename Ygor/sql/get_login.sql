@@ -1,2 +1,2 @@
--- id
-select * from LOGINS where ROWID=?
+-- src
+select * from LOGINS where src=?

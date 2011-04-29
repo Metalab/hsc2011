@@ -1,1 +1,1 @@
-select ROWID, * from LOGINS where accepted="true" and ack="false"
+select * from LOGINS where accepted="true" and ack="false"
