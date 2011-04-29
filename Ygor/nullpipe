@@ -1,1 +1,3 @@
-cat
+while [ 0 ]; do
+	sleep 1000;
+done
