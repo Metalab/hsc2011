@@ -1,2 +1,2 @@
 -- src, dest, seqnum, ibutton, date
-insert into LOGINS values ( ?, ?, ?, ?, ?, "false", "false" );
+insert or ignore into LOGINS values ( ?, ?, ?, ?, ?, "false", "false" );
