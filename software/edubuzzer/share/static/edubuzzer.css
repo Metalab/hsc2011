@@ -20,3 +20,6 @@ li:hover { color: black; background-color: #fdd; }
     display: inline-block; width: 5em; height: 5em; margin: 1em;
     border: 0.2em outset WindowFrame; color: inherit; background-color: #9bf;
 }
+#buzzers div.raise-your-hands.ready {
+    background-color: yellow;
+}
