@@ -12,14 +12,12 @@ import org.metalab.ygor.serial.packet.Packet;
 import org.metalab.ygor.serial.packet.Packet.PacketType;
 
 public class SendServlet extends YgorServlet {
-  private Outgoing outgoing;
-  
   public SendServlet() {
     super("text/html");
-    this.outgoing = YgorDaemon.client().getOutgoing();
   }
 
   protected void process(YgorRequest query, OutputStream out) {
+    Outgoing outgoing = YgorDaemon.client().getOutgoing();
     String src = "C01DC0FFEBEEFFFF";
     String dest = query.value("dest");
     short seqnum = Short.parseShort(query.value("seqnum"));
