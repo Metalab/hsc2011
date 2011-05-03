@@ -31,6 +31,18 @@ public class YgorQuery {
     return this.execute(caller, null, null);
   }
   
+  public Transaction execute(ParameterMap pm) throws YgorException {
+    return this.execute(getCallerClassName(), null, pm);
+  }
+  
+  public Transaction execute(Transaction tnx) throws YgorException {
+    return this.execute(getCallerClassName(), tnx, null);
+  }
+  
+  public Transaction execute(Transaction tnx, ParameterMap pm) throws YgorException {
+    return this.execute(getCallerClassName(), tnx, pm);
+  }
+  
   public Transaction execute(String caller, ParameterMap pm) throws YgorException {
     return this.execute(caller, null, pm);
   }
@@ -108,5 +120,13 @@ public class YgorQuery {
   
   public void writeJson(OutputStream out) throws SQLException {
     writeJson(new PrintStream(out));
+  }
+  
+  private static String getCallerClassName() {
+    try {
+      throw new Exception();
+    } catch (Exception e) {
+      return e.getStackTrace()[2].toString();
+    }
   }
 }
