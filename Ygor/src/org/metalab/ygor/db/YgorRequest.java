@@ -26,7 +26,7 @@ public class YgorRequest implements ParameterMap {
 	}
 
 	private void parseHeader() {
-		web.info("parsing request header");
+		web.debug("parsing request header");
 		Enumeration<String> enumNames = request.getParameterNames();
 		String name;
 		while (enumNames.hasMoreElements()) {

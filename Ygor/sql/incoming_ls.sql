@@ -1,1 +1,1 @@
-select rowid,* from INCOMING;
+select rowid,* from INCOMING oder by date asc;

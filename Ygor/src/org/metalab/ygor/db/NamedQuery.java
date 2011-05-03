@@ -81,7 +81,6 @@ public class NamedQuery {
     }
   }
   public void execute(Transaction tnx, HashMap<String, Object> parameterMap) throws YgorException, SQLException {
-    if(this.pstmnt == null)
       this.pstmnt = tnx.prepareStatement(this.query);
 
     if (parameters != null) {

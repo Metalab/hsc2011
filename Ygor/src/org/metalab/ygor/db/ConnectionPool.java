@@ -3,9 +3,6 @@ package org.metalab.ygor.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
 import org.metalab.ygor.Service;
@@ -13,8 +10,6 @@ import org.metalab.ygor.YgorConfig;
 import org.metalab.ygor.YgorException;
 
 public class ConnectionPool extends Service {
-  private HashSet<Connection> allConnections;
-  private Stack<Connection> availableConnections;
   private Semaphore pool;    
   private String dbUrl;
   private int maxConnections;
@@ -25,30 +20,12 @@ public class ConnectionPool extends Service {
   
   public void doBoot() throws YgorException {
     this.dbUrl = getYgorConfig().s(YgorConfig.DB_URL);
-    this.maxConnections = getYgorConfig().i(YgorConfig.DB_MAX_CONNECTIONS);
-    this.allConnections = new HashSet<Connection>();
-    this.availableConnections = new Stack<Connection>();
-    
+    this.maxConnections = getYgorConfig().i(YgorConfig.DB_MAX_CONNECTIONS);    
     this.pool = new Semaphore(maxConnections, true);
-    try {
-      Connection conn;
-      for (int i = 0; i < maxConnections; i++) {
-        conn = createConnection();
-        allConnections.add(conn);
-        availableConnections.push(conn);
-      }
-    } catch (SQLException e) {
-      throw new YgorException("Unable to preallocate connections", e);
-    }
   }
 
   public void doHalt() throws YgorException {
     pool.drainPermits();
-    Iterator<Connection> connIt = allConnections.iterator();
-    
-    while(connIt.hasNext()) {
-      try { connIt.next().close(); } catch (SQLException e) {}
-    }
 
     /*
      *  copy the pool into local scope before closing to prevent 
@@ -60,9 +37,15 @@ public class ConnectionPool extends Service {
       localSemaCopy.release();
   }
   
-  private Connection createConnection() throws SQLException {
-    Connection conn = DriverManager.getConnection(dbUrl);
-    conn.setAutoCommit(false);
+  private Connection createConnection() {
+    Connection conn = null;
+    try {
+      conn = DriverManager.getConnection(dbUrl);
+      conn.setAutoCommit(false);
+    } catch (SQLException e) {
+      error("Unable to create db connection", e);
+    }
+    assert conn != null;
     return conn;
   }
   
@@ -83,26 +66,28 @@ public class ConnectionPool extends Service {
     } catch (InterruptedException e) {
       error("ACQUIRE INTERRUPTED!!!", e);
     }
-    
-    return availableConnections.pop();
+    System.err.println("CREATE: " + pool.availablePermits());
+    return createConnection();
   }
 
-  public void release(Connection conn) {
-    if(isClosed() || availableConnections.contains(conn))
+  public synchronized void release(Connection conn) {
+    if (isClosed())
       return;
-    
+
     try {
-      conn.close();
+      if (!conn.isClosed())
+        conn.close();
+      else
+        return;
     } catch (SQLException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      error("Unable to close db connection", e);
     }
-    try {
-      availableConnections.push(createConnection());
-    } catch (SQLException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+
+    System.err.println("CLOSE: " + pool.availablePermits());
+
+    pool.drainPermits();
     pool.release();
+
+    System.err.println("\tCLOSE: " + pool.availablePermits());
   }
 }

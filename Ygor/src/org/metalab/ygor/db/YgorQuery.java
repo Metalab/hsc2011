@@ -1,9 +1,5 @@
 package org.metalab.ygor.db;
 
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.sql.SQLException;
-
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 
@@ -70,7 +66,7 @@ public class YgorQuery {
   public void close() {
     namedQuery.reset();
     
-    if(currentTnx != null)
+    if(currentTnx != null && currentTnx.isOpen())
       db.endTransaction(currentTnx);
     
     currentTnx = null;

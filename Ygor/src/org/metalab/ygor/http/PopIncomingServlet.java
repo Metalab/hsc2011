@@ -8,6 +8,7 @@ import java.util.HashMap;
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.db.Transaction;
+import org.metalab.ygor.db.YgorDB;
 import org.metalab.ygor.db.YgorQuery;
 import org.metalab.ygor.db.YgorRequest;
 import org.metalab.ygor.db.YgorResult;
@@ -15,7 +16,7 @@ import org.metalab.ygor.util.Json;
 import org.metalab.ygor.util.ParameterMap;
 
 public class PopIncomingServlet extends YgorServlet {
-  private static YgorQuery lsIncoming = YgorDaemon.db().createPreparedQuery("incoming_ls.sql");
+  private static YgorQuery getIncoming = YgorDaemon.db().createPreparedQuery("incoming_ls.sql");
   private static YgorQuery delIncoming = YgorDaemon.db().createPreparedQuery("incoming_del.sql");
 
   public PopIncomingServlet() {
@@ -26,8 +27,8 @@ public class PopIncomingServlet extends YgorServlet {
       throws YgorException {
     try {
       RowIDParam rowidParam = new RowIDParam();
-      Transaction tnx = lsIncoming.execute(getCallerID());
-      YgorResult result = lsIncoming.getResult();
+      Transaction tnx = getIncoming.execute(getCallerID());
+      YgorResult result = getIncoming.getResult();
 
       PrintStream ps = new PrintStream(out);
       ps.print(Json.openArray);
@@ -48,7 +49,7 @@ public class PopIncomingServlet extends YgorServlet {
       throw new YgorException("SQL query failed", e);
     }
 
-    lsIncoming.close();
+    getIncoming.close();
     delIncoming.close();
   }
   

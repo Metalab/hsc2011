@@ -59,9 +59,7 @@ public class Outgoing extends Service {
     }
   }
   
-  public class Resender extends Thread {
-    public void run() {
-      
-    }
+  public class Resend extends Thread {
+    
   }
 }

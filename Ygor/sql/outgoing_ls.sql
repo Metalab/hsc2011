@@ -1,1 +1,1 @@
-SELECT * from OUTGOING;
+SELECT * from OUTGOING  oder by date asc;

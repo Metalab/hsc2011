@@ -14,13 +14,12 @@ public class Transaction {
   private long creationTime;
   private Connection connection;
   private Vector<PreparedStatement> trackedStmnts = new Vector<PreparedStatement>();
-  private boolean terminated = false;
-  protected Transaction(Connection connection, String caller, long txnnr) throws SQLException{
+  
+  protected Transaction(Connection connection, String caller, long txnnr) {
     this.connection = connection;
     this.creationTime = System.currentTimeMillis();
     this.caller = caller;
     this.txnnr = txnnr;
-    this.connection.setAutoCommit(false);
   }
 
   public long creationTime() {
@@ -35,7 +34,7 @@ public class Transaction {
     return txnnr;
   }
 
-  private void deleteStatements() {
+  private synchronized void deleteStatements() {
     try {
       Iterator<PreparedStatement> it = trackedStmnts.iterator();
       
@@ -48,31 +47,22 @@ public class Transaction {
     }
   }
 
-  protected void rollback() {
-    checkOpen();
+  protected synchronized void rollback() {
     try {
-      if(!terminated && !connection.isReadOnly() && !connection.getAutoCommit())
+      if(isOpen() && !connection.isReadOnly() && !connection.getAutoCommit())
         connection.rollback();
-      connection.setAutoCommit(true);
-      terminated = true;
+      
       deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to rollback transaction", e);
     }
   }
 
-  
-  protected void commit() {
-    checkOpen();
+  protected synchronized void commit() {
     try {
-      try {
-        if(!terminated && !connection.isReadOnly() && !connection.getAutoCommit())
-          connection.commit();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      connection.setAutoCommit(true);
-      terminated = true;
+      if(isOpen() && !connection.isReadOnly() && !connection.getAutoCommit())
+        connection.commit();
+      
       deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to commit transaction", e);
