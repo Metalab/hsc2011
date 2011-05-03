@@ -9,7 +9,7 @@ import org.json.JSONObject;
 public class LoginModel extends AbstractTableModel {
   private JSONArray data = null;
   private int rowCnt = 0;
-  private String[] columnNames = new String[] { "src", "dest", "seqnum", "ibutton", "accepted"};
+  private String[] columnNames = new String[] { "src", "dest", "seqnum", "date", "ibutton", "accepted"};
   
   protected LoginModel() {
     new PeriodicUpdate(1000).start();
