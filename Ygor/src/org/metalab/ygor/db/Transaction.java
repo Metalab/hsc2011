@@ -34,7 +34,7 @@ public class Transaction {
     return txnnr;
   }
 
-  private void delete() {
+  private void deleteStatements() {
     try {
       Iterator<PreparedStatement> it = trackedStmnts.iterator();
       
@@ -53,7 +53,7 @@ public class Transaction {
       if(!connection.isReadOnly() && !connection.getAutoCommit())
         connection.rollback();
       
-      delete();
+      deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to rollback transaction", e);
     }
@@ -65,7 +65,7 @@ public class Transaction {
       if(!connection.isReadOnly() && !connection.getAutoCommit())
         connection.commit();
       
-      delete();
+      deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to commit transaction", e);
     }
