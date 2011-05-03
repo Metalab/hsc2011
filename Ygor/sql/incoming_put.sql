@@ -1,2 +1,2 @@
--- src, dest, seqnum, type, date, payload
-insert into INCOMING values ( ?, ?, ?, ?, ?, ? );
+-- src, dest, seqnum, type, date, payload, handle
+insert into INCOMING values ( ?, ?, ?, ?, ?, ?, ? );
