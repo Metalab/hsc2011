@@ -1,0 +1,25 @@
+/* global */
+body { color: black; background-color: white; }
+h1 { float: left; }
+dl { float: right; width: 20em; }
+dt, dd { display: inline; }
+dt:after { content: ":"; }
+hr { clear: both; }
+ul { border: 0.3em outset WindowFrame; padding: 0.4em;}
+li { display: inline; border: 0.1em solid WindowFrame; padding: 0.4em; }
+li.current { color: inherit; background-color: #9bf; }
+li a { color: black; text-decoration: none; }
+li:hover { color: black; background-color: #fdd; }
+
+#buzzers div.home {
+    display: inline-block; width: 5em; height: 5em; margin: 1em;
+    border: 0.2em outset WindowFrame; color: inherit; background-color: #9c7;
+}
+
+#buzzers div.raise-your-hands {
+    display: inline-block; width: 5em; height: 5em; margin: 1em;
+    border: 0.2em outset WindowFrame; color: inherit; background-color: #9bf;
+}
+#buzzers div.raise-your-hands.ready {
+    background-color: yellow;
+}
