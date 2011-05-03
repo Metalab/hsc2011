@@ -88,10 +88,8 @@ public class ConnectionPool extends Service {
   }
 
   public void release(Connection conn) {
-    if(isClosed())
+    if(isClosed() || availableConnections.contains(conn))
       return;
-    
-    assert !availableConnections.contains(conn) : "double release detected";
     
     availableConnections.push(conn);
     pool.release();
