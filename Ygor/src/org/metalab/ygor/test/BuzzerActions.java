@@ -32,7 +32,7 @@ public class BuzzerActions {
     }
     
     public void actionPerformed(ActionEvent e) {
-      ygorFetchBySrc("accept_login.sql", lt.getSelectedSrc());
+      ygorFetchBySrc("login_accept.sql", lt.getSelectedSrc());
     }
   }
 
