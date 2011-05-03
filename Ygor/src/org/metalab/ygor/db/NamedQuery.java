@@ -62,7 +62,8 @@ public class NamedQuery {
 
   public void reset() {
     try {
-      result.close();
+      if(result != null)
+        result.close();
     } catch (SQLException e) {
       throw new YgorException("Unable to close ResultSet", e);
     } finally {
@@ -85,7 +86,11 @@ public class NamedQuery {
 
     if (parameters != null) {
       for (int i = 0; i < parameters.length; i++) {
-        pstmnt.setString(i + 1, parameterMap.get(parameters[i]).toString());
+        Object p= parameterMap.get(parameters[i]);
+        String param = null;
+        if(p != null)
+          param = p.toString();
+        pstmnt.setString(i + 1, param);
       }
     }
       

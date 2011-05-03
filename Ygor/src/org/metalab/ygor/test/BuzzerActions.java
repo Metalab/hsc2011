@@ -16,6 +16,7 @@ public class BuzzerActions {
   private String ygorUrl;
   private String baseCmdUrl;
   private String sendUrl;
+  private static short seqnum = 0;
   
   public BuzzerActions(String host, int port, LoginTable bt) {
     this.lt = bt;
@@ -36,7 +37,7 @@ public class BuzzerActions {
     public void actionPerformed(ActionEvent e) {
       String[] rowData = lt.getSelectedData();
       ygorFetchBySrc("login_accept.sql", rowData[0]);
-      enableAllButtons(rowData[1], rowData[2]);
+      enableAllButtons(rowData[0]);
     }
   }
 
@@ -82,12 +83,27 @@ public class BuzzerActions {
     return null;
   }
   
-  public void enableAllButtons(String src, String seqnum) {
+  public static String nextSeqNum() {
+    if(seqnum >= 254)
+      seqnum = 0;
+    else
+      seqnum++;
+    
+    String hex = Integer.toHexString(seqnum);
+    if(hex.length() > 2)
+      return hex.substring(hex.length() -2);
+    else if(hex.length() == 1)
+      return "0" + hex;
+    else
+      return hex; 
+  }
+  
+  public void enableAllButtons(String src) {
     try {
       //S 01 C01DC0FFEBEEFFFF C01DC0FFEBEEF002 n n z z z z ff ff
       StringBuilder sbURL = new StringBuilder(sendUrl);
-      sbURL.append("dest=").append(src)
-      .append("&seqnum=").append(seqnum).append("&type=").append("S").append("&payload=").append("n%20n%20z%20z%20z%20z%20ff%20ff");
+      String seqnumString = nextSeqNum();
+      sbURL.append("dest=").append(src).append("&seqnum=").append(seqnumString).append("&type=").append("S").append("&payload=").append("n%20n%20z%20z%20z%20z%20ff%20ff").append("&handle=").append(seqnumString);
       String urlString = sbURL.toString();
       System.out.println("action: " + urlString);
       InputStream in = new URL(urlString).openStream();

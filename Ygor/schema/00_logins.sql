@@ -2,8 +2,8 @@ CREATE TABLE LOGINS (
     src TEXT,
 	dest TEXT,
 	seqnum TEXT,
-	date INTEGER,
 	ibutton TEXT,
+	date INTEGER,
 	accepted BOOL,
 	ack BOOL
 );

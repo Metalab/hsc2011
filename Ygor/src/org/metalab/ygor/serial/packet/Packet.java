@@ -69,7 +69,7 @@ public class Packet implements ParameterMap {
       this.payload = null;
     } else {
       this.payloadString = payloadString;
-      this.payload = parsePayload(payloadString);
+      this.payload = payloadString; // null; //parsePayload(payloadString);
     }
   }
 

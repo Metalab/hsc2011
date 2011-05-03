@@ -1,6 +1,5 @@
 package org.metalab.ygor.serial;
 
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -12,9 +11,7 @@ import org.metalab.ygor.db.Transaction;
 import org.metalab.ygor.db.YgorQuery;
 import org.metalab.ygor.db.YgorResult;
 import org.metalab.ygor.serial.packet.Packet;
-import org.metalab.ygor.serial.packet.StateChange;
 import org.metalab.ygor.serial.packet.Packet.PacketType;
-import org.metalab.ygor.serial.packet.Payload.TriState;
 import org.metalab.ygor.serial.event.PacketListener;
 import org.metalab.ygor.serial.event.PacketAdapter;
 
@@ -120,16 +117,12 @@ public class Incoming extends Service {
   public static class LoginListener extends PacketAdapter {
     private static YgorQuery attemptLogin = YgorDaemon.db().createPreparedQuery("login_attempt.sql");
     private static YgorQuery ackLogin = YgorDaemon.db().createPreparedQuery("login_ack.sql");
-    private static StateChange enableAllButtons = new StateChange((short[]) null, -1, TriState.keep, TriState.keep,
-        TriState.keep, TriState.keep, (short) 255, (short) 255);
     
     public void loginEvent(Packet loginPkt)  {
       try {
         Transaction tnx = attemptLogin.execute(loginPkt);
         Packet loginAck = loginPkt.createResponse(PacketType.PKTT_LOGIN_ACK, null);
         transmit(loginAck);
-        Packet statusChange = loginPkt.createResponse(PacketType.PKTT_STATUS,enableAllButtons);
-        transmit(statusChange);
         ackLogin.execute(tnx, loginPkt);
       } finally {
         attemptLogin.close();
@@ -188,6 +181,9 @@ public class Incoming extends Service {
       } catch (Exception e) {
         YgorDaemon.baseStation().getDispatcher().warn("Ack failed", e);
       } 
+
+      putIncoming.close();
+      del_outgoing.close();
       get_outgoing.close();
     }
   }
