@@ -26,7 +26,7 @@ public class Incoming extends Service {
   public void doBoot() throws YgorException {
     addPacketListener(new LoginListener());
     addPacketListener(new PutDeviceEventListener());
-    
+    addPacketListener(new AckListener());
     receive = new Receive();
     receive.start();
   }
@@ -185,9 +185,9 @@ public class Incoming extends Service {
         YgorDaemon.baseStation().getDispatcher().warn("Ack failed", e);
       } 
 
+      get_outgoing.close();
       putIncoming.close();
       del_outgoing.close();
-      get_outgoing.close();
     }
   }
 }

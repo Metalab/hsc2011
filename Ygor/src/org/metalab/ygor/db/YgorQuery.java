@@ -68,11 +68,12 @@ public class YgorQuery {
   }
   
   public void close() {
+    namedQuery.reset();
+    
     if(currentTnx != null)
       db.endTransaction(currentTnx);
     
     currentTnx = null;
-    namedQuery.reset();
   }
 
   public YgorResult getResult(){

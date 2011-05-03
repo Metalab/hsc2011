@@ -91,7 +91,18 @@ public class ConnectionPool extends Service {
     if(isClosed() || availableConnections.contains(conn))
       return;
     
-    availableConnections.push(conn);
+    try {
+      conn.close();
+    } catch (SQLException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    try {
+      availableConnections.push(createConnection());
+    } catch (SQLException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
     pool.release();
   }
 }

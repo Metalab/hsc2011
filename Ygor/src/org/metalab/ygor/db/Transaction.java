@@ -14,12 +14,13 @@ public class Transaction {
   private long creationTime;
   private Connection connection;
   private Vector<PreparedStatement> trackedStmnts = new Vector<PreparedStatement>();
-  
-  protected Transaction(Connection connection, String caller, long txnnr) {
+  private boolean terminated = false;
+  protected Transaction(Connection connection, String caller, long txnnr) throws SQLException{
     this.connection = connection;
     this.creationTime = System.currentTimeMillis();
     this.caller = caller;
     this.txnnr = txnnr;
+    this.connection.setAutoCommit(false);
   }
 
   public long creationTime() {
@@ -50,21 +51,28 @@ public class Transaction {
   protected void rollback() {
     checkOpen();
     try {
-      if(!connection.isReadOnly() && !connection.getAutoCommit())
+      if(!terminated && !connection.isReadOnly() && !connection.getAutoCommit())
         connection.rollback();
-      
+      connection.setAutoCommit(true);
+      terminated = true;
       deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to rollback transaction", e);
     }
   }
 
+  
   protected void commit() {
     checkOpen();
     try {
-      if(!connection.isReadOnly() && !connection.getAutoCommit())
-        connection.commit();
-      
+      try {
+        if(!terminated && !connection.isReadOnly() && !connection.getAutoCommit())
+          connection.commit();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      connection.setAutoCommit(true);
+      terminated = true;
       deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to commit transaction", e);

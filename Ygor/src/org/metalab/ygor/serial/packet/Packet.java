@@ -141,6 +141,7 @@ public class Packet implements ParameterMap {
     paramMap.put("seqnum", this.seqnum);
     paramMap.put("type", this.p_type.commandLetter);
     paramMap.put("date", System.currentTimeMillis());
+    paramMap.put("handle", this.handle);
 
     if (this.p_type == PacketType.PKTT_LOGIN) {
       paramMap.put("ibutton", payloadString);
