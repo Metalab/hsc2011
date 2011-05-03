@@ -9,6 +9,7 @@ import org.metalab.ygor.db.Transaction;
 import org.metalab.ygor.db.YgorDB;
 import org.metalab.ygor.db.YgorQuery;
 import org.metalab.ygor.db.YgorRequest;
+import org.metalab.ygor.util.Json;
 
 public class QueryServlet extends YgorServlet {
   private YgorDB db;
@@ -23,7 +24,7 @@ public class QueryServlet extends YgorServlet {
     YgorQuery query = request.execute();
     try {
       query.execute(getCallerID(), request);
-      query.writeJson(out);
+      Json.writeResult(query.getResult(),out);
     } catch (SQLException e) {
       throw new YgorException("SQL query failed", e);
     }

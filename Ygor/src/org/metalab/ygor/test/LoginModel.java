@@ -9,7 +9,7 @@ import org.json.JSONObject;
 public class LoginModel extends AbstractTableModel {
   private JSONArray data = null;
   private int rowCnt = 0;
-  private String[] columnNames = new String[] { "src", "dest", "ibutton", "accepted"};
+  private String[] columnNames = new String[] { "src", "dest", "seqnum", "ibutton", "accepted"};
   
   protected LoginModel() {
     new PeriodicUpdate(1000).start();
@@ -46,7 +46,7 @@ public class LoginModel extends AbstractTableModel {
   
   private synchronized void update(){
     try {
-      JSONArray new_data = BuzzerClient.getBuzzerActions().ygorFetch("ls_login.sql");
+      JSONArray new_data = BuzzerClient.getBuzzerActions().ygorFetch("login_ls.sql");
       int new_rowCnt = 0;
       
       if (new_data != null)

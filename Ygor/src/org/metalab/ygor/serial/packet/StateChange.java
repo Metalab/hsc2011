@@ -3,7 +3,7 @@ package org.metalab.ygor.serial.packet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-public class Status extends Payload {
+public class StateChange extends Payload {
   TriState set_rgb = TriState.no;
   short[] rgb = null;
   
@@ -18,7 +18,7 @@ public class Status extends Payload {
   short eventmask = 0;
   short eventmaskmask = 0;
   
-  public Status(short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
+  public StateChange(short[] rgb, int buzzer, TriState led0, TriState led1, TriState led2, TriState led3, short eventmask, short eventmaskmask) {
     if(rgb != null) {
       this.set_rgb = TriState.yes;
       this.rgb = rgb;
@@ -38,7 +38,7 @@ public class Status extends Payload {
     this.eventmaskmask = eventmaskmask;
   }
   
-  public Status(String s) {
+  public StateChange(String s) {
     String[] tokens = s.split("\\s");
     int i = 0;
 

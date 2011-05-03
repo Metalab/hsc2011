@@ -2,12 +2,12 @@ package org.metalab.ygor.serial.packet;
 
 import org.metalab.ygor.YgorException;
 
-public class Event extends Payload {
+public class DeviceEvent extends Payload {
   public char type;
   public short reserved;
   public short eventmask;  
 
-  public Event(String payload) {
+  public DeviceEvent(String payload) {
     if(payload.length() != 5)
       throw new YgorException("Malformed payload (len != 5): " + payload);
     

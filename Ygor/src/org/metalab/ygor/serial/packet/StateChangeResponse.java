@@ -1,6 +1,6 @@
 package org.metalab.ygor.serial.packet;
 
-public class StatusResponse extends Payload {
+public class StateChangeResponse extends Payload {
   TriState led0;
   TriState led1;
   TriState led2;

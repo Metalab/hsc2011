@@ -71,9 +71,17 @@ public class NamedQuery {
     }
   }
   
+  public void addBatch() {
+    try {
+      if(pstmnt != null)
+        pstmnt.addBatch();
+    } catch (SQLException e) {
+      throw new YgorException("Unable to add batch", e);
+    }
+  }
   public void execute(Transaction tnx, HashMap<String, Object> parameterMap) throws YgorException, SQLException {
-    // TODO: cache prepared statements and reuse connections
-    this.pstmnt = tnx.prepareStatement(this.query);
+    if(this.pstmnt == null)
+      this.pstmnt = tnx.prepareStatement(this.query);
 
     if (parameters != null) {
       for (int i = 0; i < parameters.length; i++) {

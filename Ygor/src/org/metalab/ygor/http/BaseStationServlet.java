@@ -5,10 +5,10 @@ import java.io.OutputStream;
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 import org.metalab.ygor.db.YgorRequest;
-import org.metalab.ygor.serial.packet.Dispatcher;
+import org.metalab.ygor.serial.Incoming;
 
 public class BaseStationServlet extends YgorServlet {
-  private Dispatcher dispatcher;
+  private Incoming dispatcher;
   
   public BaseStationServlet() {
     super("text/html");

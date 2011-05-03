@@ -3,7 +3,7 @@ package org.metalab.ygor.serial.packet;
 public class Payload {
   public final static char DELIM = ' ';
   
-  enum TriState {
+  public enum TriState {
     yes('y'),
     no('n'),
     keep('z');

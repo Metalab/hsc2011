@@ -15,11 +15,13 @@ public class BuzzerActions {
   private LoginTable lt;
   private String ygorUrl;
   private String baseCmdUrl;
- 
+  private String sendUrl;
+  
   public BuzzerActions(String host, int port, LoginTable bt) {
     this.lt = bt;
     this.ygorUrl = "http://" + host + ":" + port + "/ygor?name=";
     this.baseCmdUrl = "http://" + host + ":" + port + "/base?cmd=";
+    this.sendUrl = "http://" + host + ":" + port + "/send?";
   }
   
   public void initBaseStation() {
@@ -32,7 +34,9 @@ public class BuzzerActions {
     }
     
     public void actionPerformed(ActionEvent e) {
-      ygorFetchBySrc("login_accept.sql", lt.getSelectedSrc());
+      String[] rowData = lt.getSelectedData();
+      ygorFetchBySrc("login_accept.sql", rowData[0]);
+      enableAllButtons(rowData[1], rowData[2]);
     }
   }
 
@@ -78,6 +82,20 @@ public class BuzzerActions {
     return null;
   }
   
+  public void enableAllButtons(String src, String seqnum) {
+    try {
+      //S 01 C01DC0FFEBEEFFFF C01DC0FFEBEEF002 n n z z z z ff ff
+      StringBuilder sbURL = new StringBuilder(sendUrl);
+      sbURL.append("dest=").append(src)
+      .append("&seqnum=").append(seqnum).append("&type=").append("S").append("&payload=").append("n%20n%20z%20z%20z%20z%20ff%20ff");
+      String urlString = sbURL.toString();
+      System.out.println("action: " + urlString);
+      InputStream in = new URL(urlString).openStream();
+      in.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
   public void baseCmd(String cmd) {
     try {
       StringBuilder sbURL = new StringBuilder(baseCmdUrl + cmd);

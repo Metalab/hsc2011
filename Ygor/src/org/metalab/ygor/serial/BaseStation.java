@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
 import org.metalab.ygor.YgorException;
-import org.metalab.ygor.serial.packet.Dispatcher;
 import org.metalab.ygor.serial.packet.Packet;
 
 public class BaseStation extends Service {
@@ -18,13 +17,13 @@ public class BaseStation extends Service {
   private Object rxmutex = new Object();
   private Object txmutex = new Object();
 
-  private Dispatcher dispatcher;
+  private Incoming dispatcher;
   
   public BaseStation(YgorConfig config) {
     super(config);
   }
   
-  public Dispatcher getDispatcher() {
+  public Incoming getDispatcher() {
     return dispatcher;
   }
 
@@ -85,7 +84,7 @@ public class BaseStation extends Service {
     }
 
     try {
-      this.dispatcher = new Dispatcher(getYgorConfig());
+      this.dispatcher = new Incoming(getYgorConfig());
       this.dispatcher.boot();
     } catch (Exception e) {
       throw new YgorException("Failed to boot dispatcher", e);
