@@ -2,13 +2,11 @@ package org.metalab.ygor.db;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
-import org.metalab.ygor.db.NamedQuery.ResultSetType;
+
 import org.metalab.ygor.util.ParameterMap;
 
 public class YgorQuery {
@@ -19,95 +17,86 @@ public class YgorQuery {
   private final static char tick = '"';
   private final static String delimVal = "\":\"";
   private final static char delimObj = ',';
-  
-  private int columnCount;
-  private String[] headerNames;
-  private boolean isOpen = true;
+
+  private YgorDB db;
   private NamedQuery namedQuery;
-  private Connection connection;
+  private Transaction currentTnx = null;
   
-  public YgorQuery(Connection connection, NamedQuery namedQuery) throws SQLException {
-    this.connection = connection;
+  public YgorQuery(NamedQuery namedQuery) {
     this.namedQuery = namedQuery;
+    this.db = YgorDaemon.db();
   }
 
-  public void execute() throws YgorException, SQLException {
-    this.execute((ParameterMap)null);
+  public Transaction execute(String caller) throws YgorException {
+    return this.execute(caller, null, null);
   }
   
-  public void execute(ParameterMap pm) throws YgorException, SQLException {
-    if(pm != null)
-      namedQuery.execute(connection, pm.getParameterMap());
-    else
-      namedQuery.execute(connection, null);
+  public Transaction execute(String caller, ParameterMap pm) throws YgorException {
+    return this.execute(caller, null, pm);
+  }
+
+  public Transaction execute(String caller, Transaction tnx) throws YgorException {
+    return this.execute(caller, tnx, null);
+  }
+  
+  public Transaction execute(String caller, Transaction tnx, ParameterMap pm) throws YgorException {
+    Transaction createdTnx = null;
+    if(tnx != null)
+      currentTnx = tnx;
+    else if(currentTnx == null)
+      currentTnx = createdTnx = db.beginTransaction(caller);      
     
-    switch (namedQuery.rs_type) {
-    case RESULT_SET:
-      ResultSet rs = (ResultSet) namedQuery.result;
-
-      ResultSetMetaData rsmd = rs.getMetaData();
-      this.columnCount = rsmd.getColumnCount();
-      this.headerNames = new String[this.columnCount];
-
-      for (int i = 0; i < headerNames.length; i++) {
-        this.headerNames[i] = rsmd.getColumnName(i + 1);
-      }
-      break;
-    case BOOLEAN:
-      this.columnCount = 1;
-      this.headerNames = new String[] { "Successful" };
-      break;
-    case INTEGER:
-      this.columnCount = 1;
-      this.headerNames = new String[] { "Updated" };      
-      break;
-    default:
-      break;
+    try {
+      if(pm != null)
+        namedQuery.execute(currentTnx, pm.getParameterMap());
+      else
+        namedQuery.execute(currentTnx, null);
+    } catch (Exception e) {
+      db.abortTransaction(currentTnx);
+      throw new YgorException("YgorQuery failed", e);
     }
+    
+    return createdTnx;
   }
   
-  public Object getResult(){
-    return namedQuery.result;
+  public void close() {
+    if(currentTnx != null)
+      db.endTransaction(currentTnx);
+    
+    currentTnx = null;
+    namedQuery.reset();
   }
 
-  public boolean isOpen() throws SQLException {
-    if(isOpen && namedQuery.rs_type == ResultSetType.RESULT_SET)
-      return (isOpen = ((ResultSet) namedQuery.result).next());
+  public YgorResult getResult(){
+    return namedQuery.getResult();
+  }
 
-    return isOpen;
+  public boolean isOpen() {
+    return currentTnx != null;
   }
   
   private void writeNextRow(PrintStream out) throws SQLException {
-    if (namedQuery.rs_type == ResultSetType.RESULT_SET) {
-      ResultSet rs = (ResultSet) namedQuery.result;
-      
-      out.print(openObj);
-      for (int i = 0; i < headerNames.length; i++) {
-        out.print(tick);
-        out.print(headerNames[i]);
-        out.print(delimVal);
-        out.print(rs.getString(i + 1));
-        out.print(tick);
-        if(i < headerNames.length - 1)
-          out.print(delimObj);
-      }
-      out.print(closeObj);
-    } else {
-      out.print(openObj);
+    YgorResult result = getResult();
+    String[] columnNames = result.columNames();
+
+    out.print(openObj);
+    for (int i = 0; i < columnNames.length; i++) {
       out.print(tick);
-      out.print(headerNames[0]);
+      out.print(columnNames[i]);
       out.print(delimVal);
-      out.print(namedQuery.result);
+      out.print(result.getString(columnNames[i]));
       out.print(tick);
-      out.print(closeObj);
-      isOpen = false;
+      if (i < columnNames.length - 1)
+        out.print(delimObj);
     }
+    out.print(closeObj);
   }
 
   public void writeJson(PrintStream out) throws SQLException {
+    YgorResult result = getResult();
     out.print(openArray);
     boolean first = true;
-    while(isOpen()) {
+    while(result.next()) {
       if(first)
         first = false;
       else
@@ -115,9 +104,6 @@ public class YgorQuery {
       writeNextRow(out);
     }
     out.print(closeArray);
-    
-    if(namedQuery.rs_type == ResultSetType.RESULT_SET)
-      ((ResultSet) namedQuery.result).close();
   }
   
   public void writeJson(OutputStream out) throws SQLException {

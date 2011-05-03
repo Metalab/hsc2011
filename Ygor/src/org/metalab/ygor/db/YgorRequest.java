@@ -46,7 +46,7 @@ public class YgorRequest implements ParameterMap {
 		return name;
 	}
 
-	public YgorQuery execute(String caller) throws YgorException {
+	public YgorQuery execute() throws YgorException {
 	  String name = value("name", true); 
 
 	  try {

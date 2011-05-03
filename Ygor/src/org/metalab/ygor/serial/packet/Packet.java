@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import org.metalab.ygor.YgorException;
+import org.metalab.ygor.db.YgorResult;
 import org.metalab.ygor.util.ParameterMap;
 
 public class Packet implements ParameterMap {
@@ -173,7 +174,7 @@ public class Packet implements ParameterMap {
 	  return new Packet(p_type, seqnum, dest, src, payloadString);
 	}
 	
-	public static Packet createFromResultSet(PacketType p_type, ResultSet rs) throws SQLException {
-	    return new Packet(p_type, rs.getShort("seqnum"), rs.getString("src"), rs.getString("dest"), null);
+	public static Packet createFromYgorResult(PacketType p_type, YgorResult result) throws SQLException {
+	    return new Packet(p_type, result.getShort("seqnum"), result.getString("src"), result.getString("dest"), null);
 	}
 }

@@ -1,12 +1,13 @@
 package org.metalab.ygor.serial.packet;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.metalab.ygor.Service;
 import org.metalab.ygor.YgorConfig;
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
+import org.metalab.ygor.db.YgorResult;
+import org.metalab.ygor.db.Transaction;
 import org.metalab.ygor.db.YgorQuery;
 import org.metalab.ygor.serial.packet.Packet.PacketType;
 import org.metalab.ygor.serial.packet.Payload.TriState;
@@ -79,51 +80,39 @@ public class Dispatcher extends Service {
     }
   }
 
-  public YgorQuery lsAccepted() throws SQLException {
-    Q.lsAccepted.execute();
-    return Q.lsAccepted;
-  }
-
-  public YgorQuery lsPending() throws SQLException {
-    Q.lsPending.execute();
-    return Q.lsPending;
-  }
-  
-  public YgorQuery logEvent(ParameterMap pm) throws SQLException {
-    Q.logEvent.execute(pm);
-    return Q.logEvent;
+//  public YgorQuery lsPending() throws SQLException {
+//    return this.executeAndClose(Q.lsPending, null);
+//  }
+//  
+  public void logEvent(ParameterMap pm) throws SQLException {
+    this.executeAndClose(Q.logEvent, pm);
   } 
 
-  public YgorQuery attemptLogin(ParameterMap pm) throws SQLException {
-    Q.loginAttempt.execute(pm);
-    return Q.loginAttempt;
+  public void attemptLogin(ParameterMap pm) throws SQLException {
+    this.executeAndClose(Q.loginAttempt, pm);
   }
 
-  public YgorQuery acceptLogin(ParameterMap pm) throws SQLException {
-    Q.acceptLogin.execute(pm);
-    return Q.acceptLogin;
-  }
-
-  public YgorQuery ackLogin(ParameterMap pm) throws SQLException {
-    Q.ackLogin.execute(pm);
-    return Q.ackLogin;
-  }
+//  public YgorQuery acceptLogin(ParameterMap pm) throws SQLException {
+//    return this.executeAndClose(Q.acceptLogin, pm);
+//  }
+//
+//  
+//  public YgorQuery ackVMStatus(ParameterMap pm) throws SQLException {
+//    return this.executeAndClose(Q.ackVMStatus, pm);
+//  }
+//  
+//  public YgorQuery queueVMStatus(ParameterMap pm) throws SQLException {
+//    return this.executeAndClose(Q.queueVMStatus, pm);
+//  }
   
-  public YgorQuery ackVMStatus(ParameterMap pm) throws SQLException {
-    Q.ackVMStatus.execute(pm);
-    return Q.ackVMStatus;
-  }
-  
-  public YgorQuery queueVMStatus(ParameterMap pm) throws SQLException {
-    Q.queueVMStatus.execute(pm);
-    return Q.queueVMStatus;
+  private void executeAndClose(YgorQuery query, ParameterMap pm) throws YgorException {
+    query.execute(this.getClass().toString(), null ,pm);
+    query.close();
   }
   
   private static class Q {
     private static YgorQuery acceptLogin = YgorDaemon.db().createPreparedQuery("accept_login.sql");
-    private static YgorQuery ackLogin = YgorDaemon.db().createPreparedQuery("ack_login.sql");
     private static YgorQuery loginAttempt = YgorDaemon.db().createPreparedQuery("attempt_login.sql");
-    private static YgorQuery lsAccepted = YgorDaemon.db().createPreparedQuery("ls_accepted_login.sql");
     private static YgorQuery lsPending = YgorDaemon.db().createPreparedQuery("ls_pending_login.sql");
     private static YgorQuery getLogin = YgorDaemon.db().createPreparedQuery("get_login.sql");
     private static YgorQuery logEvent = YgorDaemon.db().createPreparedQuery("log_event.sql");
@@ -159,7 +148,11 @@ public class Dispatcher extends Service {
   
   private class Resend extends Thread {
     private long interval;
-    
+    private YgorQuery ackLogin = YgorDaemon.db().createPreparedQuery("ack_login.sql");
+    private YgorQuery lsAccepted = YgorDaemon.db().createPreparedQuery("ls_accepted_login.sql");
+    private Status enableAllButtons = new Status((short[]) null, -1, TriState.keep, TriState.keep,
+        TriState.keep, TriState.keep, (short) 255, (short) 255);
+    private String callerID = "Resend";
     public Resend(long interval) {
       super("serial resend");
       this.interval = interval;
@@ -168,25 +161,22 @@ public class Dispatcher extends Service {
     public void run() {
       while(Dispatcher.this.isRunning()) {
         try {
-          synchronized (this) {
-            ResultSet rs = (ResultSet) lsAccepted().getResult();
+            Transaction tnx = lsAccepted.execute(callerID);
+            YgorResult result = lsAccepted.getResult();
 
-            while (rs != null && rs.next()) {
-              Packet login = Packet.createFromResultSet(PacketType.PKTT_LOGIN,
-                  rs);
-              Packet ack = login
-                  .createResponse(PacketType.PKTT_LOGIN_ACK, null);
-              Packet enable = login.createResponse(PacketType.PKTT_STATUS,
-                  new Status((short[]) null, -1, TriState.keep, TriState.keep,
-                      TriState.keep, TriState.keep, (short) 255, (short) 255));
+            while (result != null && result.next()) {
+              Packet login = Packet.createFromYgorResult(PacketType.PKTT_LOGIN,result);
+              Packet ack = login.createResponse(PacketType.PKTT_LOGIN_ACK, null);
+              Packet enable = login.createResponse(PacketType.PKTT_STATUS,enableAllButtons);
               dispatch(ack);
-              ackLogin(login);
+              ackLogin.execute(callerID, tnx, login);
               dispatch(enable);
             }
             sleep(interval);
-          }
         } catch (Exception e) {
           error("Resending failed", e);
+        } finally {
+            lsAccepted.close();
         }
       }
     }

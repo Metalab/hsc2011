@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -15,8 +14,6 @@ import java.util.HashMap;
 import org.metalab.ygor.YgorException;
 
 public class NamedQuery {
-  public enum ResultSetType  { RESULT_SET, BOOLEAN, INTEGER };
-
   private final static FileFilter sqlFilter = new FileFilter(){
     public boolean accept(File f) {
       String name = f.getName();
@@ -28,31 +25,55 @@ public class NamedQuery {
     }
   };
  
-  public long modtime;
-  public String query;
-  public String name;
-  public File f;
-  public String[] parameters = null;
+  private File file;
+  private long modtime;
+  private String filename;
+  private String query;
+  private String[] parameters = null;
   private PreparedStatement pstmnt = null;
-  public ResultSetType rs_type;
-  public Object result;
+  private YgorResult result;
   
   public NamedQuery(File f) throws IOException{
+    this.file = f;
     this.modtime = f.lastModified();
+    this.filename = f.getName();
     this.query = readQueryString(f);
-    this.name = f.getName();
-    this.f = f;
   }
-
-  private PreparedStatement getPreparedStatement(Connection connection) throws SQLException {
-    if(pstmnt == null) {
-      pstmnt = connection.prepareStatement(query);
-    }
-    return pstmnt;
+ 
+  public long getMTime() {
+    return modtime;
   }
   
-  public void execute(Connection connection, HashMap<String, Object> parameterMap) throws YgorException, SQLException {
-    PreparedStatement pstmnt = getPreparedStatement(connection);
+  public File file() {
+    return file;
+  }
+  
+  public String name() {
+    return filename;
+  }
+  
+  public String getQueryString() {
+    return query;
+  }
+  
+  public YgorResult getResult() {
+    return result;
+  }
+
+  public void reset() {
+    try {
+      result.close();
+    } catch (SQLException e) {
+      throw new YgorException("Unable to close ResultSet", e);
+    } finally {
+      pstmnt = null;
+      result = null;
+    }
+  }
+  
+  public void execute(Transaction tnx, HashMap<String, Object> parameterMap) throws YgorException, SQLException {
+    // TODO: cache prepared statements and reuse connections
+    this.pstmnt = tnx.prepareStatement(this.query);
 
     if (parameters != null) {
       for (int i = 0; i < parameters.length; i++) {
@@ -61,20 +82,13 @@ public class NamedQuery {
     }
       
     try {
-      this.result = pstmnt.executeQuery();
-      rs_type = ResultSetType.RESULT_SET;
+      boolean isResultSet = pstmnt.execute();
+      if(isResultSet)
+        this.result = new YgorResult(pstmnt.getResultSet());
+      else 
+        this.result = new YgorResult(pstmnt.getUpdateCount());
     } catch (Exception e) {
-      try {
-        this.result = pstmnt.execute();
-        rs_type = ResultSetType.BOOLEAN;
-      } catch (Exception e1) {
-        try {
-          this.result = pstmnt.executeUpdate();
-          rs_type = ResultSetType.INTEGER;
-        } catch (Exception e2) {
-          throw new YgorException("Unable to execute query", e);
-        }
-      }
+      throw new YgorException("Unable to execute query", e);
     }
   }
   
@@ -111,8 +125,8 @@ public class NamedQuery {
 
       Arrays.sort(sqlFiles, new Comparator<NamedQuery>() {
         public int compare(NamedQuery f1, NamedQuery f2) {
-          char[] name1 = f1.name.toCharArray();
-          char[] name2 = f2.name.toCharArray();
+          char[] name1 = f1.name().toCharArray();
+          char[] name2 = f2.name().toCharArray();
           
           int len = Math.min(name1.length, name2.length);
           for (int i = 0; i < len; i++) {

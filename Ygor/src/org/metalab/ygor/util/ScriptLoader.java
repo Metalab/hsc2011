@@ -44,8 +44,8 @@ public class ScriptLoader extends Service {
 	}
 
   private synchronized boolean isUpdated(NamedQuery sqlf) {
-    String name = sqlf.f.getName();
-    if (!registeredSQLFiles.containsKey(name) || sqlf.modtime > registeredSQLFiles.get(name).modtime)
+    String name = sqlf.name();
+    if (!registeredSQLFiles.containsKey(name) || sqlf.getMTime() > registeredSQLFiles.get(name).getMTime())
       return true;
     
     return false;
@@ -88,8 +88,8 @@ public class ScriptLoader extends Service {
 
         for (int i = 0; i < sqlListing.length; i++) {
           if (isUpdated(sqlListing[i])) {
-            info("Load script: " + sqlListing[i].name);
-            registeredSQLFiles.put(sqlListing[i].name, sqlListing[i]);
+            info("Load script: " + sqlListing[i].name());
+            registeredSQLFiles.put(sqlListing[i].name(), sqlListing[i]);
           }
         }
 
@@ -97,9 +97,9 @@ public class ScriptLoader extends Service {
         NamedQuery[] registeredFiles = registeredSQLFiles.values().toArray(new NamedQuery[0]);
 
         for (int i = 0; i < registeredFiles.length; i++) {
-          if (!registeredFiles[i].f.exists()) {
-            info("Unload script: " + registeredFiles[i].f.getName());
-            registeredSQLFiles.remove(registeredFiles[i].f.getName());
+          if (!registeredFiles[i].file().exists()) {
+            info("Unload script: " + registeredFiles[i].name());
+            registeredSQLFiles.remove(registeredFiles[i].name());
           }
         }
       }

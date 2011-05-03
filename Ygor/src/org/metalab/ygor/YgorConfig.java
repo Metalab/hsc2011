@@ -15,6 +15,7 @@ public class YgorConfig extends Properties {
   public final static Parameter DB_DRIVER = new Parameter("db.driver", TYPES.STRING);
   public final static Parameter DB_URL = new Parameter("db.url", TYPES.STRING);
   public final static Parameter DB_SCHEMA = new Parameter("db.schema", TYPES.FILE);
+  public final static Parameter DB_MAX_CONNECTIONS = new Parameter("db.maxConnections", TYPES.INTEGER);
   public final static Parameter DB_ALLOW_CREATE = new Parameter("db.allowCreate", TYPES.BOOLEAN);
   public final static Parameter SQL_DIR = new Parameter("sql.dir", TYPES.FILE);
   public final static Parameter SQL_INT = new Parameter("sql.interval", TYPES.INTEGER);
