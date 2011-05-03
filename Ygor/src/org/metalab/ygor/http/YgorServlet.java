@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -48,7 +46,7 @@ public abstract class YgorServlet extends HttpServlet {
       ByteArrayOutputStream stackTrace = new ByteArrayOutputStream();
       t.printStackTrace(new PrintStream(stackTrace));
       message = new String(stackTrace.toByteArray());
-
+      response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       response.setHeader("ygor-err", "1");
       response.setHeader("ygor-msg", encodeMessage(message));
     }

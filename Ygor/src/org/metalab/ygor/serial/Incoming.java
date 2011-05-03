@@ -115,16 +115,19 @@ public class Incoming extends Service {
   }
 
   public static class LoginListener extends PacketAdapter {
+    private static YgorQuery rmLogin = YgorDaemon.db().createPreparedQuery("login_rm.sql");
     private static YgorQuery attemptLogin = YgorDaemon.db().createPreparedQuery("login_attempt.sql");
     private static YgorQuery ackLogin = YgorDaemon.db().createPreparedQuery("login_ack.sql");
     
     public void loginEvent(Packet loginPkt)  {
       try {
-        Transaction tnx = attemptLogin.execute(loginPkt);
+        Transaction tnx = rmLogin.execute(loginPkt);
+        attemptLogin.execute(tnx, loginPkt);
         Packet loginAck = loginPkt.createResponse(PacketType.PKTT_LOGIN_ACK, null);
         transmit(loginAck);
         ackLogin.execute(tnx, loginPkt);
       } finally {
+        rmLogin.close();
         attemptLogin.close();
         ackLogin.close();
       }
