@@ -2,11 +2,20 @@ var Edubuzzer = {
     middleware_endpoint: '/ygor',
     main_loop_interval: 700,
     update_connected_interval: 1500,
+    update_incoming_packets_interval: 50,
     registered_apps: {'home': true, 'raise-your-hands': true, 'voting': true},
     display: function() { /*dummy*/ },
     updated_known_logins: function() { /*dummy*/ },
     known_logins: [],
+    // next_callback_id = 0, -- gets initialized at 'clear event table'
+    // pending_callbacks: object(),
 };
+
+Edubuzzer.send_package = function(dst, type, acktype, payload, ack_callback) {
+	handle = Edubuzzer.next_handle++;
+        $.getJSON('/send_package?dst='+dst+'&type='+type+'&acktype='+acktype+'&payload='+payload+'&handle='+handle);
+	Edubuzzer.pending_callbacks[handle] = ack_callback;
+}
 
 $(document).ready(function() {
     window.onhashchange = function() {
@@ -52,4 +61,26 @@ $(document).ready(function() {
             }
         );
     }, Edubuzzer.update_connected_interval);
+
+    var update_incoming_packets = window.setInterval(function() {
+        $.getJSON(
+            '/pop?name=ls_incoming_packets.sql',
+            function (packets) {
+		    $(packets).each(function(i, elem) {
+			    console.log("received package");
+			    console.log(elem);
+			    // FIXME: should be dispatched to either new_event or the respective callback from pending_callbacks
+		    });
+            }
+        );
+    }, Edubuzzer.update_incoming_packets_interval);
+
+    // clear event table
+	$.getJSON(
+		'/pop?name=ls_incoming_packets.sql',
+		function (packets) {
+			// drop them
+			Edubuzzer.pending_callbacks = object();
+			Edubuzzer.next_callback_id = 0;
+		});
 })

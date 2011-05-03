@@ -1,42 +1,35 @@
-from evm import userfunc as uf, Globals
-
-gv = Globals()
-gv.led = gv.array8u(0, length=4)
-gv.leds = gv.int8u(4)
-gv.rgb = gv.array8u(5, length=3)
-gv.button = gv.array8u(8, length=4)
-gv.buttons = gv.int8u(12)
-gv.buzzer = gv.int16(13)
-gv.padding = gv.int8u(15)
+from edubuzzer import memmapped as mm, sleep
 
 def show(which):
-    gv.led[which] = 1
-    gv.buzzer = 440 + 110 * which
-    uf(1, 250) # sleep
-    gv.led[which] = 0
-    gv.buzzer = 0
+    mm.led[which] = 1
+    mm.buzzer = 440 + 110 * which
+    sleep(250)
+    mm.led[which] = 0
+    mm.buzzer = 0
 
 def fail():
-    gv.buzzer = 440
-    gv.leds = 0x0f
-    uf(1, 1000)
-    gv.buzzer = 0
-    gv.leds = 0
+    mm.buzzer = 440
+    mm.leds = 0x0f
+    sleep(1000)
+    mm.buzzer = 0
+    mm.leds = 0
 
 def yippie():
     for x in range(3):
-        gv.buzzer = 880
-        gv.leds = 0x05
-        uf(1, 200)
-        gv.buzzer = 660
-        gv.leds = 0x0a
-        uf(1, 200)
-    uf(1, 500)
-    gv.buzzer = 0
-    gv.leds = 0
+        mm.buzzer = 880
+        mm.leds = 0x05
+        sleep(200)
+        mm.buzzer = 660
+        mm.leds = 0x0a
+        sleep(200)
+    sleep(500)
+    mm.buzzer = 0
+    mm.leds = 0
+
+    # kitt()
 
 def main():
-    gv.leds = 0
+    mm.leds = 0
     while True:
         sequence = 0x0022 # uf(7) # random
 
@@ -44,13 +37,13 @@ def main():
         for i in range(8):
             target = (sequence >> (2*i)) & 0x03
             show(target)
-            uf(1, 250) # sleep
+            sleep(250)
 
         for i in range(8):
             target = (sequence >> (2*i)) & 0x03
 
             while True:
-                nextkeys = gv.buttons
+                nextkeys = mm.buttons
 
                 if nextkeys == 1:
                     which = 0
@@ -68,9 +61,12 @@ def main():
                 fail()
                 break
 
-            while gv.buttons:
+            while mm.buttons:
                 pass
 
             show(which);
         else:
             yippie()
+
+if __name__ == "__main__":
+    main()
