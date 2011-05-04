@@ -21,6 +21,7 @@ public class SendServlet extends YgorServlet {
     String src = "*";
     String dest = query.value("dest");
     String seqnum = query.value("seqnum");
+    debug("### SEQNUM:" + seqnum);
     PacketType type = findType(query.value("type").charAt(0));
     String payload;
     try {

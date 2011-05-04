@@ -54,7 +54,7 @@ public abstract class YgorServlet extends HttpServlet {
       response.setHeader("ygor-err", "1");
       response.setHeader("ygor-msg", encodeMessage(message));
     }
-    debug(message);
+    trace(message);
   }
 
   private static String encodeMessage(String message) {
