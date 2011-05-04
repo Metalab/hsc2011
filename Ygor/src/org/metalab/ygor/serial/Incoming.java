@@ -138,6 +138,7 @@ public class Incoming extends Service {
     private static YgorQuery putIncoming = YgorDaemon.db().createPreparedQuery("incoming_put.sql");
 
     public void deviceEvent(Packet pkt) {
+      pkt.handle = "empty";
       Transaction tnx = putIncoming.open(pkt);
       YgorDaemon.baseStation().getDispatcher().debug("DEVICE CHANGE DETECTED: " + pkt);
       putIncoming.reset();
