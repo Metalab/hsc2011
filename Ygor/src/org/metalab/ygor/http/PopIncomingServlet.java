@@ -3,8 +3,6 @@ package org.metalab.ygor.http;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Vector;
 
 import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
@@ -25,8 +23,7 @@ public class PopIncomingServlet extends YgorServlet {
  
   protected void process(YgorRequest request, OutputStream out)
       throws YgorException {
-    
-    Vector<String> rowIds = new Vector<String>();
+    RowIDParam rowidParam = new RowIDParam();
     Transaction tnx = getIncoming.open(getCallerID());
     YgorResult result = getIncoming.result();
 
@@ -38,25 +35,17 @@ public class PopIncomingServlet extends YgorServlet {
         first = false;
       else {
         ps.print(Json.delimObj);
+        delIncoming.addBatch();
       }
-      String r;
-      rowIds.add(r = result.getString("rowid"));
-      debug("ROWID: " + r);
       Json.writeRow(result, ps);
+      rowidParam.setRowID(result.getString("rowid"));
+      delIncoming.open(getCallerID(), tnx, rowidParam);
     }
     ps.print(Json.closeArray);
 
     getIncoming.reset();
+    delIncoming.reset();
     tnx.end();
-
-    Iterator<String> itRowId = rowIds.iterator();
-    RowIDParam param = new RowIDParam();
-    while(itRowId.hasNext()) {
-      param.setRowID(itRowId.next());
-      tnx = delIncoming.open(getCallerID(), param);
-      delIncoming.reset();
-      tnx.end();
-    }
   }
   
   private class RowIDParam extends HashMap<String, Object> implements ParameterMap {

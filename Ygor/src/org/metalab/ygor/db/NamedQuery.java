@@ -14,6 +14,7 @@ import java.util.HashMap;
 import org.metalab.ygor.YgorException;
 
 public class NamedQuery {
+  
   private final static FileFilter sqlFilter = new FileFilter(){
     public boolean accept(File f) {
       String name = f.getName();
@@ -32,6 +33,7 @@ public class NamedQuery {
   private String[] parameters = null;
   private PreparedStatement pstmnt = null;
   private YgorResult result;
+  private boolean batch = false;
   
   public NamedQuery(File f) throws IOException{
     this.file = f;
@@ -90,12 +92,19 @@ public class NamedQuery {
         pstmnt.setString(i + 1, param);
       }
     }
-      
+
     try {
-      boolean isResultSet = pstmnt.execute();
+      boolean isResultSet = false;
+      if(batch)
+        pstmnt.executeBatch();
+      else
+        isResultSet = pstmnt.execute();
+      
       if(isResultSet)
         this.result = new YgorResult(pstmnt.getResultSet());
-      else 
+      else if(batch)
+        this.result = new YgorResult(1);
+      else
         this.result = new YgorResult(pstmnt.getUpdateCount());
     } catch (Exception e) {
       throw new YgorException("Unable to execute query", e);
