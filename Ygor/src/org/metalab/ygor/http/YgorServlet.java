@@ -40,7 +40,7 @@ public abstract class YgorServlet extends HttpServlet {
       YgorRequest queryRequest = new YgorRequest(request);
       message = "Successful";
       response.setHeader("ygor-err", "0");
-      response.setHeader("ygor-msg", encodeMessage("not implemented"));
+      response.setHeader("ygor-msg", encodeMessage("Successful"));
 
       OutputStream out = response.getOutputStream();
       process(queryRequest, out);
