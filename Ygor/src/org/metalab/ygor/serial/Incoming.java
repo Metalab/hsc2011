@@ -15,6 +15,8 @@ import org.metalab.ygor.serial.packet.Packet.PacketType;
 import org.metalab.ygor.serial.event.PacketListener;
 import org.metalab.ygor.serial.event.PacketAdapter;
 
+import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
+
 public class Incoming extends Service {
   private Receive receive;
   private Vector<PacketListener> buzzerListeners = new Vector<PacketListener>();
@@ -138,7 +140,10 @@ public class Incoming extends Service {
     private static YgorQuery putIncoming = YgorDaemon.db().createPreparedQuery("incoming_put.sql");
 
     public void deviceEvent(Packet pkt) {
-      putIncoming.open(pkt).end();
+      Transaction tnx = putIncoming.open(pkt);
+      YgorDaemon.baseStation().getDispatcher().debug("DEVICE CHANGE DETECTED: " + pkt);
+      putIncoming.reset();
+      tnx.end();
     }
   }
   
