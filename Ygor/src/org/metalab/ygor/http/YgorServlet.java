@@ -45,7 +45,7 @@ public abstract class YgorServlet extends HttpServlet {
       OutputStream out = response.getOutputStream();
       process(queryRequest, out);
       out.flush();
-
+      out.close();
     } catch (Throwable t) {
       ByteArrayOutputStream stackTrace = new ByteArrayOutputStream();
       t.printStackTrace(new PrintStream(stackTrace));
