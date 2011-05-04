@@ -76,6 +76,7 @@ public class NamedQuery {
     try {
       if(pstmnt != null)
         pstmnt.addBatch();
+      batch = true;
     } catch (SQLException e) {
       throw new YgorException("Unable to add batch", e);
     }
