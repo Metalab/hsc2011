@@ -39,7 +39,9 @@ public class PopIncomingServlet extends YgorServlet {
       else {
         ps.print(Json.delimObj);
       }
-      rowIds.add(result.getString("rowid"));
+      String r;
+      rowIds.add(r = result.getString("rowid"));
+      debug("ROWID: " + r);
       Json.writeRow(result, ps);
     }
     ps.print(Json.closeArray);
