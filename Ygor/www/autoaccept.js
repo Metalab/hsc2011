@@ -25,7 +25,10 @@ Edubuzzer.run_application = function() {
         Edubuzzer.updated_known_logins = updated_known_logins;
 
 
-// FIXME: how do i get this destroyed once 
+    Edubuzzer.stop_application = function() {
+	    window.clearInterval(Edubuzzer.autoaccept.pendingpoller);
+    };
+
     Edubuzzer.autoaccept.pendingpoller = window.setInterval(function() {
         $.getJSON(
             Edubuzzer.middleware_endpoint+'?name=login_ls_pending.sql',

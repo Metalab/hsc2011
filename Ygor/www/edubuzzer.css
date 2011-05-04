@@ -23,3 +23,26 @@ li:hover { color: black; background-color: #fdd; }
 #buzzers div.raise-your-hands.ready {
     background-color: yellow;
 }
+#buzzers div.raise-your-hands.ready.raised {
+    background-color: purple;
+}
+
+#buzzers div.voting {
+    display: inline-block; width: 5em; height: 5em; margin: 1em;
+    border: 0.2em outset WindowFrame; color: inherit; background-color: white;
+}
+#buzzers div.voting.none {
+	background-color: silver;
+}
+#buzzers div.voting.red {
+	background-color: red;
+}
+#buzzers div.voting.green {
+	background-color: lime;
+}
+#buzzers div.voting.blue {
+	background-color: blue;
+}
+#buzzers div.voting.yellow {
+	background-color: yellow;
+}

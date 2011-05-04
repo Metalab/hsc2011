@@ -1,28 +1,31 @@
 Edubuzzer.raise_your_hands = {
     'running': false,
     'initialized_buzzers': {},
-    'raised_hands': [],
+    'raised_hands': {},
 }
 
 function configure_new_buzzer(dst) {
-	Edubuzzer.send_package(dst, 'S', 's', 'n n ynnn ff 01', function() {
-		// FIXME: keep references to the div elements to update their colours
-		console.log("configured buzzer "+dst+", should set it to yellow");
+	Edubuzzer.send_package(dst, 'S', 's', 'y 00 00 00 y 00 00 ynnn ff 01', function() {
+		Edubuzzer.raise_your_hands.initialized_buzzers[dst] = true;
+		updated_known_logins(); // refresh display
 	});
 }
 
 updated_known_logins = function() {
     $('#buzzers').empty();
     $(Edubuzzer.known_logins).each(function(i, elem) {
-        $('#buzzers').append('<div class="raise-your-hands" title="'+elem.src+'" />');
+        $('#buzzers').append('<div class="raise-your-hands'+(Edubuzzer.raise_your_hands.initialized_buzzers[elem.src] == true ? ' ready':'')+(Edubuzzer.raise_your_hands.raised_hands[elem.src] == true ? ' raised':'')+'" title="'+elem.src+'" />');
 	// as it is now, every time a device is added, all previous get
 	// re-initialized. will be better with pop_connectionchanges
-	configure_new_buzzer(elem.src);
+	if(Edubuzzer.raise_your_hands.initialized_buzzers[elem.src] != true)
+		configure_new_buzzer(elem.src);
     });
 };
 
 new_event = function(event) {
-	console.log("probably, someone raised a hand");
+	// given the event mask, this can be only a raise event -- at least, for the first implementation
+	Edubuzzer.raise_your_hands.raised_hands[event.src] = true;
+	updated_known_logins(); // refresh display
 }
 
 Edubuzzer.run_application = function() {
