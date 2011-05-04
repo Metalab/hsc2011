@@ -3,9 +3,11 @@ updated_known_logins = function() {
     $(Edubuzzer.known_logins).each(function(i, elem) {
 	var buzzerdiv = $('<div class="home" title="'+elem.src+'" />');
 	buzzerdiv[0].onclick = function() {
-		Edubuzzer.send_package(elem.src, 'S', 's', 'n n ynny 00 00', function(){});
-		Edubuzzer.send_package(elem.src, 'S', 's', 'n n nyyn 00 00', function(){});
-		Edubuzzer.send_package(elem.src, 'S', 's', 'n n nnnn 00 00', function(){});
+		Edubuzzer.send_package(elem.src, 'S', 's', 'y ff 00 00 n ynny ff 0f', function(){
+			Edubuzzer.send_package(elem.src, 'S', 's', 'y 00 ff 00 n nyyn 00 00', function(){
+				Edubuzzer.send_package(elem.src, 'S', 's', 'y 00 00 ff n nnnn 00 00', function(){});
+			});
+		});
 	}
 	console.log(buzzerdiv);
         $('#buzzers').append(buzzerdiv);
