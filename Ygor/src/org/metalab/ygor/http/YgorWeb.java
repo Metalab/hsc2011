@@ -66,7 +66,7 @@ public class YgorWeb extends Service {
 		String line;
 		String[] alias;
 		while ((line = reader.readLine()) != null) {
-			debug("http alias config input line: " + line);
+			trace("http alias config input line: " + line);
 			alias = line.split("\\s");
 			if (alias.length != 2)
 				throw new YgorException("Malformed alias detected: " + line);
@@ -91,7 +91,7 @@ public class YgorWeb extends Service {
 		String line;
 		String[] mapping;
 		while ((line = reader.readLine()) != null) {
-			debug("http servlet mapping input line: " + line);
+			trace("http servlet mapping input line: " + line);
 			mapping = line.split("\\s");
 			if (mapping.length != 2)
 				throw new YgorException("Malformed mapping detected: " + line);

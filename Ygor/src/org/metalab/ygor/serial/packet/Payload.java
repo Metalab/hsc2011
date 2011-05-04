@@ -32,10 +32,10 @@ public class Payload {
   }
   
   public final static String toHexByteString(int i, int byteIndex, int len) {
-    return Integer.toHexString(0xff & (i >> (8 * byteIndex))).substring(0,len);
+    return Integer.toHexString(0xff & (i >> (8 * byteIndex))).substring(0,len).toUpperCase();
   }
   
   public final static String toHexByteString(int i, int len) {
-    return Integer.toHexString(i).substring(0,len);
+    return Integer.toHexString(i).substring(0,len).toUpperCase();
   }
 }

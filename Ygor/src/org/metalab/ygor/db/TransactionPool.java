@@ -30,7 +30,7 @@ public class TransactionPool extends Service {
   }
 
   public Transaction acquire(String caller) throws YgorException {
-    debug("acquire start: " + caller);
+    trace("acquire start: " + caller);
 
     Connection conn = connPool.acquire();
     Transaction tnx;
@@ -42,12 +42,12 @@ public class TransactionPool extends Service {
       throw new YgorException("Unable to create Transaction", e);
     }
 
-    debug("acquire end: " + tnx);
+    trace("acquire end: " + tnx);
     return tnx;
   }
 
   public void commit(Transaction tnx) throws YgorException {
-    debug("commit: " + tnx);
+    trace("commit: " + tnx);
     try {
       tnx.commit();
     } finally{
@@ -56,7 +56,7 @@ public class TransactionPool extends Service {
   }
 
   public void abort(Transaction tnx) throws YgorException {
-    debug("abort: " + tnx);
+    trace("abort: " + tnx);
     try {
       tnx.rollback();
     } finally {

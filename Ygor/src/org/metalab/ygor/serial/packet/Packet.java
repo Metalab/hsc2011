@@ -8,7 +8,7 @@ import org.metalab.ygor.util.ParameterMap;
 
 public class Packet implements ParameterMap {
   public PacketType p_type = null;
-  public short seqnum = -1;
+  public String seqnum = null;
   public String src = null;
   public String dest = null;
   public Object payload = null;
@@ -43,19 +43,33 @@ public class Packet implements ParameterMap {
     boolean matches(char letter) {
       return this.commandLetter == letter;
     }
+    
+    public static PacketType findType(char typeChar) {
+      if(typeChar == PacketType.PKTT_STATUS.commandLetter)
+        return PacketType.PKTT_STATUS;
+      else if(typeChar == PacketType.PKTT_READ.commandLetter)
+        return PacketType.PKTT_READ;
+      else if(typeChar == PacketType.PKTT_WRITE.commandLetter)
+        return PacketType.PKTT_WRITE;
+      else if(typeChar == PacketType.PKTT_VMSTATUS.commandLetter)
+        return PacketType.PKTT_VMSTATUS;
+       else 
+        throw new YgorException("Illegal packet type: " + typeChar);
+    }
   };
 
-  public Packet(PacketType p_type, short seqnum, String src, String dest,
+  public Packet(PacketType p_type, String seqnum, String src, String dest,
       String payloadString, String handle) {
     this.p_type = p_type;
     this.seqnum = seqnum;
     this.handle = handle;
-    if (src.length() == 16)
+
+    if (src.length() == 16 || (src.equals("*")))
       this.src = src;
     else
       throw new IllegalArgumentException("Invalid source address: " + src);
 
-    if (dest.length() == 16)
+    if (dest.length() == 16 || (dest.equals("*")))
       this.dest = dest;
     else
       throw new IllegalArgumentException("Invalid destination address: " + dest);
@@ -77,13 +91,11 @@ public class Packet implements ParameterMap {
     // len = ptype(1) + seqnum(2) + src(16) + dest(16) + payloadLen(?) +
     // newline(1)
     int len = 35 + payloadString.length() + 1;
-    String seqNumHex = Integer.toHexString(seqnum);
-    if (seqNumHex.length() < 2)
-      seqNumHex = '0' + Integer.toHexString(seqnum);
+
 
     StringBuilder sb = new StringBuilder(len);
     char delim = ' ';
-    sb.append(p_type.commandLetter).append(delim).append(seqNumHex)
+    sb.append(p_type.commandLetter).append(delim).append(seqnum)
         .append(delim).append(src).append(delim).append(dest).append(delim);
 
     if (payload != null)
@@ -123,9 +135,10 @@ public class Packet implements ParameterMap {
     if (p_type == null)
       throw new YgorException("Unknown packet type:" + s);
 
-    short seqnum = Short.parseShort(tokens[1], 16);
+    String seqnum = tokens[1];
     String src = tokens[2];
-    String dest = tokens[3];
+    //just ignore the destination address and use wildcards 
+    String dest = "*";
     String payload = null;
 
     if (tokens.length > 4)
@@ -159,9 +172,9 @@ public class Packet implements ParameterMap {
     return new Packet(p_type, seqnum, dest, src, payloadString, handle);
   }
 
-  public static Packet createFromYgorResult(PacketType p_type, YgorResult result)
-      {
-    return new Packet(p_type, result.getShort("seqnum"),
-        result.getString("src"), result.getString("dest"), null, result.getString("handle"));
+  public static Packet createFromResult(YgorResult result) {
+    return new Packet(PacketType.findType(result.getString("type").charAt(0)),
+        result.getString("seqnum"), result.getString("src"),
+        result.getString("dest"), result.getString("payload"), result.getString("handle"));
   }
 }

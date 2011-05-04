@@ -8,15 +8,13 @@ import org.metalab.ygor.db.YgorRequest;
 import org.metalab.ygor.serial.Incoming;
 
 public class BaseStationServlet extends YgorServlet {
-  private Incoming dispatcher;
-  
   public BaseStationServlet() {
     super("text/html");
-    this.dispatcher = YgorDaemon.baseStation().getDispatcher();
   }
 
   protected void process(YgorRequest query, OutputStream out) {
     String cmd = query.value("cmd");
+    trace(cmd);
     try {
         YgorDaemon.baseStation().transmit(cmd);
     } catch (Exception e) {

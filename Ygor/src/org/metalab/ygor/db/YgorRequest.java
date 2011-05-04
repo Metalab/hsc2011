@@ -26,20 +26,20 @@ public class YgorRequest implements ParameterMap {
 	}
 
 	private void parseHeader() {
-		web.debug("parsing request header");
+		web.trace("parsing request header");
 		Enumeration<String> enumNames = request.getParameterNames();
-		String name;
+		
 		while (enumNames.hasMoreElements()) {
 				String key = enumNames.nextElement();
 				String value = request.getParameter(key);
 				
-				web.debug(
+				web.trace(
 								"request parameter: " + key + " = " + value);
 				params.put(key, value);
 		}
 		String ts = String.valueOf(System.currentTimeMillis() - (24 * 3600000));
 		params.put("timemillis", ts);
-		web.debug("timemillis: " + ts);
+		web.trace("timemillis: " + ts);
 	}
 
 	public String name() {

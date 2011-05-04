@@ -2,7 +2,6 @@ package org.metalab.ygor.util;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.sql.SQLException;
 
 import org.metalab.ygor.db.YgorResult;
 
@@ -15,7 +14,7 @@ public class Json {
   public final static String delimVal = "\":\"";
   public final static char delimObj = ',';
   
-  public static void writeRow(YgorResult result, PrintStream out) throws SQLException {
+  public static void writeRow(YgorResult result, PrintStream out) {
     String[] columnNames = result.columNames();
 
     out.print(openObj);
@@ -31,7 +30,7 @@ public class Json {
     out.print(closeObj);
   }
 
-  public static void writeResult(YgorResult result, PrintStream out) throws SQLException {
+  public static void writeResult(YgorResult result, PrintStream out)  {
     out.print(openArray);
     boolean first = true;
     while(result.next()) {
@@ -44,7 +43,7 @@ public class Json {
     out.print(closeArray);
   }
   
-  public static void writeResult(YgorResult result, OutputStream out) throws SQLException {
+  public static void writeResult(YgorResult result, OutputStream out) {
     writeResult(result, new PrintStream(out));
   }
 }

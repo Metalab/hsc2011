@@ -13,16 +13,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.net.BCodec;
+import org.apache.log4j.Logger;
+import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.db.YgorRequest;
 
 public abstract class YgorServlet extends HttpServlet {
   private String contentType;
   private String callerID;
   private final static BCodec base64 = new BCodec();
-
+  private Logger logger;
+  
   public YgorServlet(String contentType) {
     this.contentType = contentType;
     this.callerID = createCallerID();
+    this.logger = Logger.getLogger(getClass().getName());
   }
 
   protected abstract void process(YgorRequest query, OutputStream out);
@@ -50,7 +54,7 @@ public abstract class YgorServlet extends HttpServlet {
       response.setHeader("ygor-err", "1");
       response.setHeader("ygor-msg", encodeMessage(message));
     }
-    log(message);
+    debug(message);
   }
 
   private static String encodeMessage(String message) {
@@ -68,5 +72,45 @@ public abstract class YgorServlet extends HttpServlet {
 
   protected String createCallerID() {
     return this.getClass().toString();
+  }
+  
+  public void debug(String message) {
+    logger.debug(message);
+  }
+
+  public void debug(String message, Throwable cause) {
+    logger.debug(message, cause);
+  }
+
+  public void error(String message) {
+    logger.error(message);
+  }
+
+  public void error(String message, Throwable cause) {
+    logger.error(message, cause);
+  }
+
+  public void warn(String message) {
+    logger.warn(message);
+  }
+
+  public void warn(String message, Throwable cause) {
+    logger.warn(message, cause);
+  }
+
+  public void info(String message) {
+    logger.info(message);
+  }
+
+  public void info(String message, Throwable cause) {
+    logger.info(message, cause);
+  }
+
+  public void trace(String message) {
+    logger.trace(message);
+  }
+
+  public void trace(String message, Throwable cause) {
+    logger.trace(message, cause);
   }
 }

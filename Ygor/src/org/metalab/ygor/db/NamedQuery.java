@@ -64,8 +64,6 @@ public class NamedQuery {
     try {
       if(result != null)
         result.close();
-    } catch (SQLException e) {
-      throw new YgorException("Unable to close ResultSet", e);
     } finally {
       pstmnt = null;
       result = null;

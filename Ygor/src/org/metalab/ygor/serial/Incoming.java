@@ -56,7 +56,7 @@ public class Incoming extends Service {
         l.packetEvent(pkt);
         switch (pkt.p_type) {
         case PKTT_LOGIN:
-          l.loginEvent(pkt);
+          l.loginEvent(pkt);          
           break;
 
         case PKTT_EVENT:
@@ -120,18 +120,17 @@ public class Incoming extends Service {
     private static YgorQuery attemptLogin = YgorDaemon.db().createPreparedQuery("login_attempt.sql");
     private static YgorQuery ackLogin = YgorDaemon.db().createPreparedQuery("login_ack.sql");
     
-    public void loginEvent(Packet loginPkt)  {
-      try {
-        Transaction tnx = rmLogin.execute(loginPkt);
-        attemptLogin.execute(tnx, loginPkt);
-        Packet loginAck = loginPkt.createResponse(PacketType.PKTT_LOGIN_ACK, null);
-        transmit(loginAck);
-        ackLogin.execute(tnx, loginPkt);
-      } finally {
-        rmLogin.close();
-        attemptLogin.close();
-        ackLogin.close();
-      }
+    public void loginEvent(Packet loginPkt) {
+      Transaction tnx = rmLogin.open(loginPkt);
+      attemptLogin.open(tnx, loginPkt);
+      ackLogin.open(tnx, loginPkt);
+
+      transmit(loginPkt.createResponse(PacketType.PKTT_LOGIN_ACK, null));
+
+      rmLogin.reset();
+      attemptLogin.reset();
+      ackLogin.reset();
+      tnx.end();
     }
   }
 
@@ -139,11 +138,7 @@ public class Incoming extends Service {
     private static YgorQuery putIncoming = YgorDaemon.db().createPreparedQuery("incoming_put.sql");
 
     public void deviceEvent(Packet pkt) {
-      try {
-        putIncoming.execute(pkt);
-      } finally {
-        putIncoming.close();
-      }
+      putIncoming.open(pkt).end();
     }
   }
   
@@ -152,9 +147,9 @@ public class Incoming extends Service {
     private static YgorQuery del_outgoing = YgorDaemon.db().createPreparedQuery("outgoing_del.sql");
     private static YgorQuery putIncoming = YgorDaemon.db().createPreparedQuery("incoming_put.sql");
     
-    public void packetEvent(Packet statusAck) {
+    public void packetEvent(Packet ack) {
       PacketType outgoingType = null;
-      switch (statusAck.p_type) {
+      switch (ack.p_type) {
       case PKTT_STATUS_ACK:
         outgoingType = PacketType.PKTT_STATUS;
         break;
@@ -173,22 +168,21 @@ public class Incoming extends Service {
        default:
          return;
       }
-      Packet status = statusAck.createResponse(outgoingType, null);
-      Transaction tnx = get_outgoing.execute(status);
-      YgorResult result = get_outgoing.getResult();
-      try {
-        if(result.next()) {
-          statusAck.handle = result.getString("handle");
-          putIncoming.execute(tnx, statusAck);
-          del_outgoing.execute(tnx, status);
-        }
-      } catch (Exception e) {
-        YgorDaemon.baseStation().getDispatcher().warn("Ack failed", e);
-      } 
+      
+      Packet initiator = ack.createResponse(outgoingType, null);
+      Transaction tnx = get_outgoing.open(initiator);
+      YgorResult result = get_outgoing.result();
 
-      putIncoming.close();
-      del_outgoing.close();
-      get_outgoing.close();
+      if (result.next()) {
+        ack.handle = result.getString("handle");
+        putIncoming.open(tnx, ack);
+        del_outgoing.open(tnx, initiator);
+      }
+
+      putIncoming.reset();
+      del_outgoing.reset();
+      get_outgoing.reset();
+      tnx.end();
     }
   }
 }

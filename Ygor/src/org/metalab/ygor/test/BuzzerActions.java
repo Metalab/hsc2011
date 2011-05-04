@@ -102,7 +102,7 @@ public class BuzzerActions {
     try {
       //S 01 C01DC0FFEBEEFFFF C01DC0FFEBEEF002 n n z z z z ff ff
       StringBuilder sbURL = new StringBuilder(sendUrl);
-      String seqnumString = nextSeqNum();
+      String seqnumString = nextSeqNum().toUpperCase();
       sbURL.append("dest=").append(src).append("&seqnum=").append(seqnumString).append("&type=").append("S").append("&payload=").append("n%20n%20z%20z%20z%20z%20ff%20ff").append("&handle=").append(seqnumString);
       String urlString = sbURL.toString();
       System.out.println("action: " + urlString);

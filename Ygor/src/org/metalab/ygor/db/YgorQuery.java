@@ -1,85 +1,72 @@
 package org.metalab.ygor.db;
 
-import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 
 import org.metalab.ygor.util.ParameterMap;
 
 public class YgorQuery {
-  private YgorDB db;
   private NamedQuery namedQuery;
-  private Transaction currentTnx = null;
   
   public YgorQuery(NamedQuery namedQuery) {
     this.namedQuery = namedQuery;
-    this.db = YgorDaemon.db();
   }
 
-  public Transaction execute(String caller) throws YgorException {
-    return this.execute(caller, null, null);
+  public Transaction open() throws YgorException {
+    return this.open(getCallerClassName(), null, null);
+  }
+  public Transaction open(String caller) throws YgorException {
+    return this.open(caller, null, null);
   }
   
-  public Transaction execute(ParameterMap pm) throws YgorException {
-    return this.execute(getCallerClassName(), null, pm);
+  public Transaction open(ParameterMap pm) throws YgorException {
+    return this.open(getCallerClassName(), null, pm);
   }
   
-  public Transaction execute(Transaction tnx) throws YgorException {
-    return this.execute(getCallerClassName(), tnx, null);
+  public Transaction open(Transaction tnx) throws YgorException {
+    return this.open(getCallerClassName(), tnx, null);
   }
   
-  public Transaction execute(Transaction tnx, ParameterMap pm) throws YgorException {
-    return this.execute(getCallerClassName(), tnx, pm);
+  public Transaction open(Transaction tnx, ParameterMap pm) throws YgorException {
+    return this.open(getCallerClassName(), tnx, pm);
   }
   
-  public Transaction execute(String caller, ParameterMap pm) throws YgorException {
-    return this.execute(caller, null, pm);
+  public Transaction open(String caller, ParameterMap pm) throws YgorException {
+    return this.open(caller, null, pm);
   }
 
-  public Transaction execute(String caller, Transaction tnx) throws YgorException {
-    return this.execute(caller, tnx, null);
+  public Transaction open(String caller, Transaction tnx) throws YgorException {
+    return this.open(caller, tnx, null);
   }
   
-  public Transaction execute(String caller, Transaction tnx, ParameterMap pm) throws YgorException {
-    Transaction createdTnx = null;
-    if(tnx != null)
-      currentTnx = tnx;
-    else if(currentTnx == null)
-      currentTnx = createdTnx = db.beginTransaction(caller);      
+  public Transaction open(String caller, Transaction tnx, ParameterMap pm) throws YgorException {
+    if(tnx == null)
+      tnx = Transaction.create(caller);
     
     try {
       if(pm != null)
-        namedQuery.execute(currentTnx, pm.getParameterMap());
+        namedQuery.execute(tnx, pm.getParameterMap());
       else
-        namedQuery.execute(currentTnx, null);
+        namedQuery.execute(tnx, null);
     } catch (Exception e) {
-      db.abortTransaction(currentTnx);
+      tnx.abort();
       throw new YgorException("YgorQuery failed", e);
     }
     
-    return createdTnx;
+    return tnx;
   }
   
   public void addBatch() {
     namedQuery.addBatch();
   }
   
-  public void close() {
-    namedQuery.reset();
-    
-    if(currentTnx != null && currentTnx.isOpen())
-      db.endTransaction(currentTnx);
-    
-    currentTnx = null;
+  public void reset() {
+    namedQuery.reset();    
   }
 
-  public YgorResult getResult(){
+  public YgorResult result(){
     return namedQuery.getResult();
   }
 
-  public boolean isOpen() {
-    return currentTnx != null;
-  }
-  
   private static String getCallerClassName() {
     try {
       throw new Exception();

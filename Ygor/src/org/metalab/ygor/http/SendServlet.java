@@ -18,9 +18,9 @@ public class SendServlet extends YgorServlet {
 
   protected void process(YgorRequest query, OutputStream out) {
     Outgoing outgoing = YgorDaemon.client().getOutgoing();
-    String src = "C01DC0FFEBEEFFFF";
+    String src = "*";
     String dest = query.value("dest");
-    short seqnum = Short.parseShort(query.value("seqnum"));
+    String seqnum = query.value("seqnum");
     PacketType type = findType(query.value("type").charAt(0));
     String payload;
     try {
@@ -29,7 +29,6 @@ public class SendServlet extends YgorServlet {
       throw new YgorException("Unable to decode payload", e);
     }
     String handle = query.value("handle");
-
     outgoing.dispatch(new Packet(type,seqnum, src, dest, payload, handle));
   }
 

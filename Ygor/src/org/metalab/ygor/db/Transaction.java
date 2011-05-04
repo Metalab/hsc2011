@@ -3,9 +3,8 @@ package org.metalab.ygor.db;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.Vector;
 
+import org.metalab.ygor.YgorDaemon;
 import org.metalab.ygor.YgorException;
 
 public class Transaction {
@@ -13,7 +12,6 @@ public class Transaction {
   private long txnnr;
   private long creationTime;
   private Connection connection;
-  private Vector<PreparedStatement> trackedStmnts = new Vector<PreparedStatement>();
   
   protected Transaction(Connection connection, String caller, long txnnr) {
     this.connection = connection;
@@ -34,25 +32,10 @@ public class Transaction {
     return txnnr;
   }
 
-  private synchronized void deleteStatements() {
-    try {
-      Iterator<PreparedStatement> it = trackedStmnts.iterator();
-      
-      while(it.hasNext())
-        it.next().close();
-
-      trackedStmnts.clear();
-    } catch (SQLException e) {
-      throw new YgorException("Unable to clear statements", e);
-    }
-  }
-
   protected synchronized void rollback() {
     try {
       if(isOpen() && !connection.isReadOnly() && !connection.getAutoCommit())
         connection.rollback();
-      
-      deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to rollback transaction", e);
     }
@@ -62,8 +45,6 @@ public class Transaction {
     try {
       if(isOpen() && !connection.isReadOnly() && !connection.getAutoCommit())
         connection.commit();
-      
-      deleteStatements();
     } catch (SQLException e) {
       throw new YgorException("Unable to commit transaction", e);
     }
@@ -72,9 +53,7 @@ public class Transaction {
   protected PreparedStatement prepareStatement(String query) {
     checkOpen();
     try {
-      PreparedStatement pstmnt = connection.prepareStatement(query);
-      trackedStmnts.add(pstmnt);
-      return pstmnt;
+      return connection.prepareStatement(query);
     } catch (SQLException e) {
       throw new YgorException("Unable to prepare statement: " + query, e);
     }
@@ -104,5 +83,19 @@ public class Transaction {
   public String toString() {
     return "Transaction(" + this.txnnr + " / " + runningTime() + "): "
         + caller();
+  }
+  
+  protected static Transaction create(String caller) {
+      return YgorDaemon.db().beginTransaction(caller);
+  }
+
+  public void end() {
+    if(this.isOpen())
+      YgorDaemon.db().endTransaction(this);
+  }
+
+  public void abort() {
+    if(this.isOpen())
+      YgorDaemon.db().abortTransaction(this);
   }
 }

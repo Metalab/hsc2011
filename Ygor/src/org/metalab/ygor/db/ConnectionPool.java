@@ -26,13 +26,13 @@ public class ConnectionPool extends Service {
 
   public void doHalt() throws YgorException {
     pool.drainPermits();
-
     /*
      *  copy the pool into local scope before closing to prevent 
      *  other threads from accessing the pool while releasing
      */
     Semaphore localSemaCopy = pool;
     close();
+
     while(localSemaCopy.hasQueuedThreads())
       localSemaCopy.release();
   }
@@ -66,7 +66,7 @@ public class ConnectionPool extends Service {
     } catch (InterruptedException e) {
       error("ACQUIRE INTERRUPTED!!!", e);
     }
-    System.err.println("CREATE: " + pool.availablePermits());
+
     return createConnection();
   }
 
@@ -83,11 +83,7 @@ public class ConnectionPool extends Service {
       error("Unable to close db connection", e);
     }
 
-    System.err.println("CLOSE: " + pool.availablePermits());
-
     pool.drainPermits();
     pool.release();
-
-    System.err.println("\tCLOSE: " + pool.availablePermits());
   }
 }

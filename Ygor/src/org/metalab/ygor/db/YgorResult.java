@@ -76,23 +76,15 @@ public class YgorResult {
     else
       throw new YgorException("Unknown column name: " + name);
   }
-
-  public Short getShort(String name) {
-    if (resultType() == ResultType.RESULT_SET)
+  
+  public boolean next() {
+    if (resultType() == ResultType.RESULT_SET) {
       try {
-        return rs.getShort(name);
+        return open = rs.next();
       } catch (SQLException e) {
-        return null;
+        throw new YgorException("Unable to get next result", e);
       }
-    else {
-      Integer i = getInteger(name);
-      return i == null ? null : i.shortValue();
     }
-  }
-
-  public boolean next() throws SQLException {
-    if (resultType() == ResultType.RESULT_SET)
-      return open = rs.next();
     else if (first) {
       first = !first;
       return true;
@@ -100,10 +92,14 @@ public class YgorResult {
       return open = false;
   }
 
-  protected void close() throws SQLException {
-    if (resultType() == ResultType.RESULT_SET)
-      rs.close();
-
+  protected void close() {
+    if (resultType() == ResultType.RESULT_SET) {
+      try {
+        rs.close();
+      } catch (SQLException e) {
+        throw new YgorException("Unable to get next result", e);
+      }
+    }
     open = false;
   }
 }
