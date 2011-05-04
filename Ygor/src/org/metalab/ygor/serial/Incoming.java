@@ -15,8 +15,6 @@ import org.metalab.ygor.serial.packet.Packet.PacketType;
 import org.metalab.ygor.serial.event.PacketListener;
 import org.metalab.ygor.serial.event.PacketAdapter;
 
-import com.sun.org.apache.xml.internal.resolver.helpers.Debug;
-
 public class Incoming extends Service {
   private Receive receive;
   private Vector<PacketListener> buzzerListeners = new Vector<PacketListener>();
