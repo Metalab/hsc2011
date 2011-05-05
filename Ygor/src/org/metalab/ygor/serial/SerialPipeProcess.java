@@ -30,7 +30,7 @@ public class SerialPipeProcess extends Process {
 	}
 
 	public void addExitHook(Runnable hook) {
-	  new ProcObserver(hook).start();
+	  //new ProcObserver(hook).start();
 	}
 	
 	public void destroy() {

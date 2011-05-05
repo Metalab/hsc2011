@@ -6,10 +6,13 @@ import java.util.concurrent.Semaphore;
 
 public class NullInputStream extends InputStream {
   public int read() throws IOException {
-    return 0;
+    return 1;
+  }
+  
+  public int available() throws IOException {
+    return 1;
   }
   
   public void close() throws IOException {
   }
-
 }
