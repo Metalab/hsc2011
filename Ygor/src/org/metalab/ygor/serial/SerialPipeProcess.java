@@ -58,42 +58,29 @@ public class SerialPipeProcess extends Process {
 	public int waitFor() throws InterruptedException {
 		return serialPipeProc.waitFor();
 	}
-/*
+
   private static FileInputStream getDirectInputStream(Process p)
       throws IOException, NoSuchFieldException, IllegalAccessException {
     BufferedInputStream bIn = (BufferedInputStream) p.getInputStream();
-    // indirectly mark the stream as closed by setting the internal buffer to
-    // null;
-    Field fBuf = bIn.getClass().getDeclaredField("buf");
-    fBuf.setAccessible(true);
-    fBuf.set(bIn, null);
-    // obtain the underlying stream and set it to null in the buffered stream
-    // just to be sure it won't be accessed anymore
+
     Field fDirectIn = bIn.getClass().getSuperclass().getDeclaredField("in");
     fDirectIn.setAccessible(true);
     FileInputStream fIn = (FileInputStream) fDirectIn.get(bIn);
-    fDirectIn.set(bIn, null);
+    fDirectIn.set(bIn, new NullInputStream());
     return fIn;
   }
 
   private static FileOutputStream getDirectOutputStream(Process p)
       throws IOException, NoSuchFieldException, IllegalAccessException {
     BufferedOutputStream bOut = (BufferedOutputStream) p.getOutputStream();
-    // indirectly mark the stream as closed by setting the internal buffer to
-    // null;
-    Field fBuf = bOut.getClass().getDeclaredField("buf");
-    fBuf.setAccessible(true);
-    fBuf.set(bOut, null);
 
-    // obtain the underlying stream and set it to null in the buffered stream
-    // just to be sure it won't be accessed anymore
     Field fDirectOut = bOut.getClass().getSuperclass().getDeclaredField("out");
     fDirectOut.setAccessible(true);
     FileOutputStream fOut = (FileOutputStream) fDirectOut.get(bOut);
-    fDirectOut.set(bOut, null);
+    fDirectOut.set(bOut, new NullOutputStream());
     return fOut;
   }
-  */
+  
   private class ProcObserver extends Thread {
     private Runnable hook;
 
