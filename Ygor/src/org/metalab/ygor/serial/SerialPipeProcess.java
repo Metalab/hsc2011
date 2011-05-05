@@ -22,8 +22,8 @@ public class SerialPipeProcess extends Process {
     String[] cmd = props.getExternalCommand();
     this.serialPipeProc = Runtime.getRuntime().exec(cmd);
     try {
-      this.in = this.serialPipeProc.getInputStream();
-      this.out = this.serialPipeProc.getOutputStream();
+      this.in = getDirectInputStream(this.serialPipeProc);
+      this.out = getDirectOutputStream(this.serialPipeProc);
     } catch (Exception e) {
       throw new IOException("Unable to obtain direct stream", e);
     }
