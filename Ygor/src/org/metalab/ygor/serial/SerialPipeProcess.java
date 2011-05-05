@@ -22,8 +22,8 @@ public class SerialPipeProcess extends Process {
     String[] cmd = props.getExternalCommand();
     this.serialPipeProc = Runtime.getRuntime().exec(cmd);
     try {
-      this.in = getDirectInputStream(this.serialPipeProc);
-      this.out = getDirectOutputStream(this.serialPipeProc);
+      this.in = this.serialPipeProc.getInputStream();
+      this.out = this.serialPipeProc.getOutputStream();
     } catch (Exception e) {
       throw new IOException("Unable to obtain direct stream", e);
     }
@@ -58,7 +58,7 @@ public class SerialPipeProcess extends Process {
 	public int waitFor() throws InterruptedException {
 		return serialPipeProc.waitFor();
 	}
-
+/*
   private static FileInputStream getDirectInputStream(Process p)
       throws IOException, NoSuchFieldException, IllegalAccessException {
     BufferedInputStream bIn = (BufferedInputStream) p.getInputStream();
@@ -93,7 +93,7 @@ public class SerialPipeProcess extends Process {
     fDirectOut.set(bOut, null);
     return fOut;
   }
-  
+  */
   private class ProcObserver extends Thread {
     private Runnable hook;
 
